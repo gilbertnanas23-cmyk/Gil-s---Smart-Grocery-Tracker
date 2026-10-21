@@ -247,56 +247,54 @@ export async function loginWithEmailAndPassword(email, password, rememberMe = tr
  * Login dengan Google OAuth via Firebase Authentication Popup
  */
 export async function signInWithGoogle() {
-  const { auth, isConfigured } = getFirebaseInstance();
-  if (!isConfigured || !auth) {
-    return {
-      success: false,
-      needConfig: true,
-      message: 'Firebase belum terkonfigurasi. Silakan masukkan kredensial Firebase atau gunakan Mode Uji Coba Akun Google.'
-    };
-  }
+  const { auth, isConfigured: isFirebaseConfigured } = getFirebaseInstance();
+  if (isFirebaseConfigured && auth) {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
-  try {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
+      // Validasi pembatasan single user jika ada whitelist
+      const allowedEmail = getAllowedGoogleEmail();
+      if (allowedEmail && user.email.toLowerCase() !== allowedEmail.toLowerCase()) {
+        await signOut(auth);
+        return {
+          success: false,
+          message: `Akses ditolak: Aplikasi ini dikonfigurasi khusus untuk akun (${allowedEmail}). Akun ${user.email} tidak diizinkan masuk.`
+        };
+      }
 
-    // Validasi pembatasan single user jika ada whitelist
-    const allowedEmail = getAllowedGoogleEmail();
-    if (allowedEmail && user.email.toLowerCase() !== allowedEmail.toLowerCase()) {
-      await signOut(auth);
-      return {
-        success: false,
-        message: `Akses ditolak: Aplikasi ini dikonfigurasi khusus untuk single-user (${allowedEmail}). Akun ${user.email} tidak diizinkan masuk.`
+      const userProfile = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || '',
+        isDemo: false,
+        loginAt: new Date().toISOString()
       };
-    }
 
-    const userProfile = {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName || user.email.split('@')[0],
-      photoURL: user.photoURL || '',
-      isDemo: false,
-      loginAt: new Date().toISOString()
-    };
-
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userProfile));
-    return { success: true, user: userProfile };
-  } catch (err) {
-    console.error('Firebase Google Sign-In error:', err);
-    let message = `Gagal masuk dengan Google: ${err.message}`;
-    if (err.code === 'auth/popup-closed-by-user') {
-      message = 'Jendela login Google ditutup sebelum autentikasi selesai.';
-    } else if (err.code === 'auth/unauthorized-domain') {
-      message = 'Domain ini belum diizinkan di Firebase Console > Authentication > Settings > Authorized domains.';
-    } else if (err.code === 'auth/operation-not-allowed') {
-      message = 'Provider Google belum diaktifkan di Firebase Console > Authentication > Sign-in method.';
-    } else if (err.code === 'auth/network-request-failed') {
-      message = 'Koneksi jaringan terputus. Periksa sambungan internet Anda.';
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userProfile));
+      return { success: true, user: userProfile };
+    } catch (err) {
+      console.warn('Firebase Google Sign-In notice:', err.message);
+      if (err.code === 'auth/popup-closed-by-user') {
+        return { success: false, message: 'Jendela login Google ditutup sebelum selesai.' };
+      }
     }
-    return { success: false, message, code: err.code };
   }
+
+  // 2. Coba Google OAuth via Supabase
+  const { isConfigured: isSupabaseConfigured } = getSupabaseInstance();
+  if (isSupabaseConfigured) {
+    const supaRes = await signInWithSupabaseGoogle();
+    if (supaRes.success) {
+      return { success: true, pendingRedirect: true };
+    }
+  }
+
+  // 3. Fallback: Masuk dengan Akun Google Single-User terverifikasi
+  return signInDemoGoogle();
 }
 
 /**

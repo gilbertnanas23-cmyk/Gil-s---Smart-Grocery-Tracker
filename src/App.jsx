@@ -30,6 +30,7 @@ import {
   initAuthListener,
   signOutUser
 } from './services/firebase';
+import { initSupabaseAuthListener } from './services/supabase';
 import { calculateTieredDiscount } from './utils/calculations';
 import { formatRupiah } from './utils/formatters';
 
@@ -59,12 +60,12 @@ export function App() {
     return isConfigured;
   });
 
-  // Listen to Auth State changes on mount
+  // Listen to Auth State changes on mount (Firebase + Supabase)
   useEffect(() => {
-    const unsubscribe = initAuthListener((user) => {
+    const handleUserUpdate = (user) => {
       setCurrentUser(user);
-      if (user) {
-        // Coba sinkronisasi data dari cloud Firestore
+      if (user && user.uid) {
+        // Coba sinkronisasi data dari cloud (Supabase / Firestore)
         syncUserDataFromCloud(user.uid).then((cloudData) => {
           if (cloudData) {
             if (cloudData.cart) setCart(cloudData.cart);
@@ -74,10 +75,14 @@ export function App() {
           }
         });
       }
-    });
+    };
+
+    const unsubFirebase = initAuthListener(handleUserUpdate);
+    const unsubSupabase = initSupabaseAuthListener(handleUserUpdate);
 
     return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
+      if (typeof unsubFirebase === 'function') unsubFirebase();
+      if (typeof unsubSupabase === 'function') unsubSupabase();
     };
   }, []);
 

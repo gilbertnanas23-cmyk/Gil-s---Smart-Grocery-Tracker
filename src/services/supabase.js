@@ -244,3 +244,40 @@ export async function fetchCartFromSupabase(userId) {
     return null;
   }
 }
+
+const AUTH_STORAGE_KEY = 'smart_grocery_auth_user_v1';
+
+/**
+ * Listener untuk mendeteksi sesi masuk Supabase (termasuk kembalinya dari Google OAuth)
+ */
+export function initSupabaseAuthListener(onUserChanged) {
+  const { supabase, isConfigured } = getSupabaseInstance();
+  if (!isConfigured || !supabase) return () => {};
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session?.user) {
+      const allowedEmail = localStorage.getItem('smart_grocery_allowed_email') || import.meta.env.VITE_ALLOWED_GOOGLE_EMAIL;
+      if (allowedEmail && session.user.email.toLowerCase() !== allowedEmail.toLowerCase()) {
+        await supabase.auth.signOut();
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        onUserChanged(null);
+        return;
+      }
+
+      const userProfile = {
+        uid: session.user.id,
+        email: session.user.email,
+        displayName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0],
+        photoURL: session.user.user_metadata?.avatar_url || '',
+        provider: 'supabase',
+        loginAt: new Date().toISOString()
+      };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userProfile));
+      onUserChanged(userProfile);
+    }
+  });
+
+  return () => {
+    subscription?.unsubscribe();
+  };
+}
