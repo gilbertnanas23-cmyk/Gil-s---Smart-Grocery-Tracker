@@ -146,6 +146,17 @@ export function Header({
                   </button>
 
                   <button
+                    className="dropdown-menu-item"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      onLogout();
+                    }}
+                  >
+                    <UserCheck size={14} color="#34d399" />
+                    <span>Ganti Akun Lain</span>
+                  </button>
+
+                  <button
                     className="dropdown-menu-item danger"
                     onClick={() => {
                       setShowUserDropdown(false);

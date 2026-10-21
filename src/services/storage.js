@@ -251,3 +251,18 @@ export function importAllData(data) {
   if (Array.isArray(data.history)) localStorage.setItem(KEYS.HISTORY, JSON.stringify(data.history));
   triggerCloudSync();
 }
+
+/**
+ * Bersihkan data sesi lokal saat ganti akun / logout
+ * agar progress akun sebelumnya tidak mencemari akun baru
+ */
+export function clearUserDataForAccountSwitch() {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  localStorage.removeItem(KEYS.CART);
+  localStorage.removeItem(KEYS.BUDGET);
+  localStorage.removeItem(KEYS.CATALOG);
+  localStorage.removeItem(KEYS.HISTORY);
+}

@@ -12,6 +12,11 @@ import { SettingsModal } from './components/SettingsModal';
 import { LoginView } from './components/LoginView';
 import { BottomNav } from './components/BottomNav';
 import {
+  INITIAL_CART_ITEMS,
+  DEFAULT_MASTER_CATALOG,
+  INITIAL_PAST_SESSIONS
+} from './data/defaultProducts';
+import {
   getLocalCart,
   saveLocalCart,
   getLocalBudget,
@@ -22,7 +27,8 @@ import {
   savePastSessions,
   checkoutSession,
   triggerCloudSync,
-  syncUserDataFromCloud
+  syncUserDataFromCloud,
+  clearUserDataForAccountSwitch
 } from './services/storage';
 import {
   getFirebaseInstance,
@@ -68,10 +74,10 @@ export function App() {
         // Coba sinkronisasi data dari cloud (Supabase / Firestore)
         syncUserDataFromCloud(user.uid).then((cloudData) => {
           if (cloudData) {
-            if (cloudData.cart) setCart(cloudData.cart);
-            if (cloudData.budgetCap) setBudgetCap(cloudData.budgetCap);
-            if (cloudData.catalog) setCatalog(cloudData.catalog);
-            if (cloudData.history) setSessions(cloudData.history);
+            setCart(Array.isArray(cloudData.cart) ? cloudData.cart : []);
+            setBudgetCap(cloudData.budgetCap || 500000);
+            setCatalog(Array.isArray(cloudData.catalog) ? cloudData.catalog : DEFAULT_MASTER_CATALOG);
+            setSessions(Array.isArray(cloudData.history) ? cloudData.history : []);
           }
         });
       }
@@ -92,24 +98,39 @@ export function App() {
     setFirebaseStatus(isConfigured);
   }, [isSettingsModalOpen]);
 
-  // Handle successful login
+  // Handle successful login & restore account progress
   const handleLoginSuccess = async (user) => {
     setCurrentUser(user);
-    // Sinkronkan data cloud milik user jika ada
     if (user && user.uid) {
       const cloudData = await syncUserDataFromCloud(user.uid);
       if (cloudData) {
-        if (cloudData.cart) setCart(cloudData.cart);
-        if (cloudData.budgetCap) setBudgetCap(cloudData.budgetCap);
-        if (cloudData.catalog) setCatalog(cloudData.catalog);
-        if (cloudData.history) setSessions(cloudData.history);
+        setCart(Array.isArray(cloudData.cart) ? cloudData.cart : []);
+        setBudgetCap(cloudData.budgetCap || 500000);
+        setCatalog(Array.isArray(cloudData.catalog) ? cloudData.catalog : DEFAULT_MASTER_CATALOG);
+        setSessions(Array.isArray(cloudData.history) ? cloudData.history : []);
+      } else {
+        // Pengguna baru: inisialisasi data default independen
+        setCart(INITIAL_CART_ITEMS);
+        setBudgetCap(500000);
+        setCatalog(DEFAULT_MASTER_CATALOG);
+        setSessions(INITIAL_PAST_SESSIONS);
+        saveLocalCart(INITIAL_CART_ITEMS);
+        saveLocalBudget(500000);
+        saveMasterCatalog(DEFAULT_MASTER_CATALOG);
+        savePastSessions(INITIAL_PAST_SESSIONS);
       }
     }
   };
 
-  // Handle user logout
+  // Handle user logout & clean account switch
   const handleLogout = async () => {
+    triggerCloudSync();
     await signOutUser();
+    clearUserDataForAccountSwitch();
+    setCart(INITIAL_CART_ITEMS);
+    setBudgetCap(500000);
+    setCatalog(DEFAULT_MASTER_CATALOG);
+    setSessions(INITIAL_PAST_SESSIONS);
     setCurrentUser(null);
   };
 
