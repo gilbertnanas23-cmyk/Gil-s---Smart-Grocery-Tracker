@@ -63,6 +63,7 @@ export function getMasterCatalog() {
 
 export function saveMasterCatalog(catalog) {
   localStorage.setItem(KEYS.CATALOG, JSON.stringify(catalog));
+  triggerCloudSync();
 }
 
 export function getPastSessions() {
@@ -109,14 +110,14 @@ export function triggerCloudSync() {
         syncedAt: new Date().toISOString()
       };
 
+      // Sync ke Supabase jika terhubung (prioritas utama)
+      if (isSupabaseConfigured) {
+        await syncCartToSupabase(user.uid, payload);
+      }
+
       // Sync ke Firebase jika terhubung
       if (isFirebaseConfigured) {
         await syncCartToCloud(user.uid, payload);
-      }
-
-      // Sync ke Supabase jika terhubung
-      if (isSupabaseConfigured) {
-        await syncCartToSupabase(user.uid, payload);
       }
     } catch (e) {
       console.warn('Sync cloud background gagal:', e);
@@ -125,17 +126,17 @@ export function triggerCloudSync() {
 }
 
 /**
- * Muat data dari Cloud (Firebase / Supabase) ke Local Storage saat user login
+ * Muat data dari Cloud (Supabase / Firebase) ke Local Storage saat user login
  */
 export async function syncUserDataFromCloud(userId) {
   if (!userId) return null;
   try {
-    // 1. Coba dari Firestore
-    let cloudData = await fetchCartFromCloud(userId);
+    // 1. Coba dari Supabase terlebih dahulu
+    let cloudData = await fetchCartFromSupabase(userId);
 
-    // 2. Jika tidak ada di Firestore, coba dari Supabase
+    // 2. Jika tidak ada di Supabase, coba dari Firestore
     if (!cloudData) {
-      cloudData = await fetchCartFromSupabase(userId);
+      cloudData = await fetchCartFromCloud(userId);
     }
 
     if (cloudData) {
