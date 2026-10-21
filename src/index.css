@@ -69,6 +69,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+input,
+textarea,
+select {
+  font-family: inherit;
+  text-transform: none;
+}
+
 body {
   font-family: var(--font-sans);
   background: #040711;
@@ -1364,17 +1371,17 @@ body {
   outline: none;
   color: #f8fafc;
   font-family: var(--font-sans);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: none;
 }
 
 .login-input-field::placeholder {
   color: #64748b;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: none;
 }
 
 /* Checkbox & Forget Password Row */
