@@ -6,6 +6,9 @@ const STORAGE_KEY = 'smart_grocery_supabase_config';
  * Mendapatkan konfigurasi Supabase aktif
  * Prioritas: 1. LocalStorage setting pengguna -> 2. Environment Variables (.env)
  */
+const DEFAULT_SUPABASE_URL = 'https://sbilzgcvfotrfqsujlxj.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_4SRCHsMk6bIZr0ctLwgQZQ_ufch3Czl';
+
 export function getSupabaseConfig() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -20,8 +23,8 @@ export function getSupabaseConfig() {
   }
 
   const envConfig = {
-    url: import.meta.env.VITE_SUPABASE_URL || '',
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+    url: import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL,
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY
   };
 
   if (envConfig.url && envConfig.anonKey) {
