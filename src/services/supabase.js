@@ -94,7 +94,57 @@ export async function testSupabaseConnection(urlToTest, keyToTest) {
 }
 
 /**
- * Login / Daftar dengan Email & Password via Supabase Auth
+ * Registrasi Akun Baru dengan Email & Password via Supabase Auth
+ */
+export async function registerWithSupabase(email, password, displayName = '') {
+  const { supabase, isConfigured } = getSupabaseInstance();
+  if (!isConfigured || !supabase) {
+    return { success: false, message: 'Supabase belum terkonfigurasi.' };
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const nameToSave = displayName.trim() || cleanEmail.split('@')[0];
+
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password: password,
+      options: {
+        data: {
+          name: nameToSave,
+          full_name: nameToSave
+        }
+      }
+    });
+
+    if (error) {
+      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+        return { success: false, message: 'Email ini sudah terdaftar. Silakan langsung masuk (login).' };
+      }
+      return { success: false, message: `Gagal mendaftar: ${error.message}` };
+    }
+
+    if (data?.user) {
+      const userProfile = {
+        uid: data.user.id,
+        email: data.user.email,
+        displayName: nameToSave,
+        photoURL: '',
+        provider: 'supabase',
+        loginAt: new Date().toISOString()
+      };
+      return { success: true, user: userProfile };
+    }
+
+    return { success: false, message: 'Gagal membuat akun. Silakan coba lagi.' };
+  } catch (err) {
+    console.error('Supabase register error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Login dengan Email & Password via Supabase Auth (Strict: Wajib sudah terdaftar)
  */
 export async function loginWithSupabase(email, password) {
   const { supabase, isConfigured } = getSupabaseInstance();
@@ -105,7 +155,6 @@ export async function loginWithSupabase(email, password) {
   const cleanEmail = email.trim().toLowerCase();
 
   try {
-    // 1. Coba Sign In
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password: password
@@ -115,7 +164,7 @@ export async function loginWithSupabase(email, password) {
       const userProfile = {
         uid: data.user.id,
         email: data.user.email,
-        displayName: data.user.user_metadata?.name || cleanEmail.split('@')[0],
+        displayName: data.user.user_metadata?.name || data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
         photoURL: data.user.user_metadata?.avatar_url || '',
         provider: 'supabase',
         loginAt: new Date().toISOString()
@@ -123,30 +172,24 @@ export async function loginWithSupabase(email, password) {
       return { success: true, user: userProfile };
     }
 
-    // 2. Jika user belum ada, coba auto sign up
-    if (error && (error.message.includes('Invalid login credentials') || error.status === 400)) {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password: password,
-        options: {
-          data: { name: cleanEmail.split('@')[0] }
-        }
-      });
-
-      if (!signUpError && signUpData?.user) {
-        const userProfile = {
-          uid: signUpData.user.id,
-          email: signUpData.user.email,
-          displayName: cleanEmail.split('@')[0],
-          photoURL: '',
-          provider: 'supabase',
-          loginAt: new Date().toISOString()
+    if (error) {
+      if (error.message.includes('Invalid login credentials') || error.status === 400) {
+        return {
+          success: false,
+          notRegistered: true,
+          message: 'Akun belum terdaftar atau email/kata sandi salah. Jika belum memiliki akun, silakan klik "Daftar Akun Baru".'
         };
-        return { success: true, user: userProfile };
       }
+      if (error.message.includes('Email not confirmed')) {
+        return {
+          success: false,
+          message: 'Email belum dikonfirmasi. Periksa kotak masuk email Anda.'
+        };
+      }
+      return { success: false, message: error.message };
     }
 
-    return { success: false, message: error?.message || 'Gagal login via Supabase.' };
+    return { success: false, message: 'Akun belum terdaftar. Silakan registrasi terlebih dahulu.' };
   } catch (err) {
     console.error('Supabase login error:', err);
     return { success: false, message: err.message };

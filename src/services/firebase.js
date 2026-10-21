@@ -9,11 +9,38 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from 'firebase/auth';
-import { loginWithSupabase, getSupabaseInstance } from './supabase';
+import { loginWithSupabase, registerWithSupabase, getSupabaseInstance } from './supabase';
 
 const STORAGE_KEY = 'smart_grocery_firebase_config';
 const AUTH_STORAGE_KEY = 'smart_grocery_auth_user_v1';
 const ALLOWED_EMAIL_KEY = 'smart_grocery_allowed_email';
+const REGISTERED_USERS_KEY = 'smart_grocery_registered_users_v1';
+
+export function getRegisteredUsers() {
+  try {
+    const raw = localStorage.getItem(REGISTERED_USERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveRegisteredUserLocally(email, password, displayName) {
+  const users = getRegisteredUsers();
+  const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (existing) {
+    existing.password = password;
+    existing.displayName = displayName || existing.displayName;
+  } else {
+    users.push({
+      email: email.toLowerCase(),
+      password,
+      displayName: displayName || email.split('@')[0],
+      createdAt: new Date().toISOString()
+    });
+  }
+  localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
+}
 
 /**
  * Mendapatkan konfigurasi Firebase aktif
@@ -139,7 +166,76 @@ export function getStoredAuthUser() {
 }
 
 /**
- * Login dengan Email dan Password (mendukung Remember Me, Supabase, Firebase, dan Offline fallback)
+ * Registrasi Akun Baru (Supabase, Firebase, dan Registry Lokal)
+ */
+export async function registerUser(email, password, displayName = '') {
+  if (!email || !email.trim()) {
+    return { success: false, message: 'Silakan masukkan alamat email Anda.' };
+  }
+  if (!password || password.length < 6) {
+    return { success: false, message: 'Kata sandi minimal 6 karakter.' };
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const namePart = (displayName && displayName.trim()) || cleanEmail.split('@')[0];
+
+  // 1. Coba registrasi ke Supabase jika terkonfigurasi
+  const { isConfigured: isSupabaseConfigured } = getSupabaseInstance();
+  if (isSupabaseConfigured) {
+    const supaRes = await registerWithSupabase(cleanEmail, password, namePart);
+    if (!supaRes.success) {
+      return supaRes;
+    }
+    saveRegisteredUserLocally(cleanEmail, password, namePart);
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(supaRes.user));
+    return supaRes;
+  }
+
+  // 2. Coba registrasi ke Firebase jika terkonfigurasi
+  const { auth, isConfigured: isFirebaseConfigured } = getFirebaseInstance();
+  if (isFirebaseConfigured && auth) {
+    try {
+      const res = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+      const userProfile = {
+        uid: res.user.uid,
+        email: cleanEmail,
+        displayName: namePart,
+        photoURL: '',
+        isDemo: false,
+        loginAt: new Date().toISOString()
+      };
+      saveRegisteredUserLocally(cleanEmail, password, namePart);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userProfile));
+      return { success: true, user: userProfile };
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        return { success: false, message: 'Email sudah terdaftar. Silakan langsung masuk (login).' };
+      }
+      return { success: false, message: `Gagal mendaftar: ${err.message}` };
+    }
+  }
+
+  // 3. Registrasi lokal / offline
+  const users = getRegisteredUsers();
+  if (users.some(u => u.email === cleanEmail)) {
+    return { success: false, message: 'Email ini sudah terdaftar. Silakan langsung masuk (login).' };
+  }
+
+  saveRegisteredUserLocally(cleanEmail, password, namePart);
+  const userProfile = {
+    uid: `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+    email: cleanEmail,
+    displayName: namePart,
+    photoURL: '',
+    isDemo: false,
+    loginAt: new Date().toISOString()
+  };
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userProfile));
+  return { success: true, user: userProfile };
+}
+
+/**
+ * Login dengan Email dan Password (STRICT: Wajib sudah terdaftar)
  */
 export async function loginWithEmailAndPassword(email, password, rememberMe = true) {
   if (!email || !email.trim()) {
@@ -160,7 +256,7 @@ export async function loginWithEmailAndPassword(email, password, rememberMe = tr
     };
   }
 
-  // 1. Coba Autentikasi via Supabase jika terkonfigurasi
+  // 1. Coba Autentikasi via Supabase jika terkonfigurasi (Strict: Tidak ada auto-register saat login)
   const { isConfigured: isSupabaseConfigured } = getSupabaseInstance();
   if (isSupabaseConfigured) {
     const supaRes = await loginWithSupabase(cleanEmail, password);
@@ -172,9 +268,11 @@ export async function loginWithEmailAndPassword(email, password, rememberMe = tr
       }
       return supaRes;
     }
+    // Jika gagal login di Supabase (belum terdaftar / salah password), tolak langsung!
+    return supaRes;
   }
 
-  // 2. Coba Autentikasi via Firebase jika terkonfigurasi
+  // 2. Coba Autentikasi via Firebase jika terkonfigurasi (Strict: Wajib sudah terdaftar)
   const { auth, isConfigured } = getFirebaseInstance();
   if (isConfigured && auth) {
     try {
@@ -195,41 +293,37 @@ export async function loginWithEmailAndPassword(email, password, rememberMe = tr
       }
       return { success: true, user: userProfile };
     } catch (err) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        try {
-          const newRes = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-          const newUser = newRes.user;
-          const userProfile = {
-            uid: newUser.uid,
-            email: newUser.email,
-            displayName: cleanEmail.split('@')[0],
-            photoURL: '',
-            isDemo: false,
-            loginAt: new Date().toISOString()
-          };
-          if (rememberMe) {
-            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userProfile));
-          } else {
-            sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userProfile));
-          }
-          return { success: true, user: userProfile };
-        } catch (createErr) {
-          console.warn('Firebase email auth fallback:', createErr);
-        }
+      if (err.code === 'auth/user-not-found') {
+        return {
+          success: false,
+          message: 'Akun belum terdaftar. Silakan klik "Daftar Akun Baru" terlebih dahulu.'
+        };
       }
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        return { success: false, message: 'Kata sandi salah. Silakan coba lagi.' };
+      }
+      return { success: false, message: err.message };
     }
   }
 
-  // 3. Sesi akun offline/mandiri fallback
-  const namePart = cleanEmail.split('@')[0];
-  const formattedName = namePart
-    .replace(/[._]/g, ' ')
-    .replace(/\b\w/g, l => l.toUpperCase());
+  // 3. Autentikasi mode lokal/offline (Wajib sudah terdaftar)
+  const registeredUsers = getRegisteredUsers();
+  const matchedUser = registeredUsers.find(u => u.email === cleanEmail);
+  if (!matchedUser) {
+    return {
+      success: false,
+      message: 'Akun belum terdaftar. Silakan klik "Daftar Akun Baru" terlebih dahulu.'
+    };
+  }
+
+  if (matchedUser.password !== password) {
+    return { success: false, message: 'Kata sandi salah. Silakan periksa kembali kata sandi Anda.' };
+  }
 
   const userProfile = {
     uid: `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
     email: cleanEmail,
-    displayName: formattedName,
+    displayName: matchedUser.displayName || cleanEmail.split('@')[0],
     photoURL: '',
     isDemo: false,
     loginAt: new Date().toISOString()

@@ -1529,6 +1529,32 @@ body {
   cursor: not-allowed;
 }
 
+.login-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.login-switch-btn {
+  background: none;
+  border: none;
+  color: #34d399;
+  font-weight: 700;
+  font-size: 0.76rem;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+}
+
+.login-switch-btn:hover {
+  color: #ffffff;
+}
+
 /* ==========================================================================
    HEADER USER PROFILE & POPOVER
    ========================================================================== */
