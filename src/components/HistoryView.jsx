@@ -130,7 +130,7 @@ export function HistoryView({
               </div>
               <div className="empty-state-title">Belum Ada Riwayat Sesi</div>
               <div className="empty-state-desc">
-                Selesaikan belanjaan di tab Troli untuk mengarsipkan struk pertama Rian ke database ini.
+                Selesaikan belanjaan di tab Troli untuk mengarsipkan struk pertama Anda ke database ini.
               </div>
             </div>
           ) : (

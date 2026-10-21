@@ -1,6 +1,28 @@
 import React, { useState } from 'react';
-import { X, Cloud, Key, Check, RefreshCw, Database, Server, Smartphone, ExternalLink, HelpCircle } from 'lucide-react';
-import { getFirebaseConfig, saveCustomFirebaseConfig, testFirebaseConnection } from '../services/firebase';
+import {
+  X,
+  Cloud,
+  Key,
+  Check,
+  RefreshCw,
+  Database,
+  Server,
+  Smartphone,
+  ExternalLink,
+  HelpCircle,
+  UserCheck,
+  ShieldCheck,
+  LogOut,
+  Mail,
+  Lock
+} from 'lucide-react';
+import {
+  getFirebaseConfig,
+  saveCustomFirebaseConfig,
+  testFirebaseConnection,
+  getAllowedGoogleEmail,
+  setAllowedGoogleEmail
+} from '../services/firebase';
 import { resetToDefaults, triggerCloudSync } from '../services/storage';
 import { formatRupiah } from '../utils/formatters';
 
@@ -9,7 +31,9 @@ export function SettingsModal({
   onClose,
   budgetCap,
   onUpdateBudget,
-  onResetData
+  onResetData,
+  currentUser,
+  onLogout
 }) {
   const existingConfig = getFirebaseConfig() || {
     projectId: '',
@@ -27,6 +51,7 @@ export function SettingsModal({
   const [testing, setTesting] = useState(false);
   const [customBudget, setCustomBudget] = useState(budgetCap);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [allowedEmail, setAllowedEmailInput] = useState(() => getAllowedGoogleEmail());
 
   if (!isOpen) return null;
 
@@ -73,8 +98,14 @@ export function SettingsModal({
     }
   };
 
+  const handleSaveAllowedEmail = () => {
+    setAllowedGoogleEmail(allowedEmail);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2000);
+  };
+
   const handleResetSample = () => {
-    if (confirm('Kembalikan semua data ke sampel awal Rian (Beras, Minyak, Telur, Sabun, dll)?')) {
+    if (confirm('Kembalikan semua data ke sampel awal kebutuhan pokok (Beras, Minyak, Telur, Sabun, dll)?')) {
       resetToDefaults();
       if (onResetData) onResetData();
       onClose();
@@ -89,7 +120,7 @@ export function SettingsModal({
         <div className="modal-header-row">
           <h2 className="modal-title">
             <Server size={20} color="var(--primary)" />
-            Pengaturan & Integrasi Cloud
+            Pengaturan Akun & Cloud
           </h2>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />
@@ -111,7 +142,123 @@ export function SettingsModal({
           </div>
         )}
 
-        {/* 1. Pengaturan Uang Saku Bulanan */}
+        {/* 1. Status Akun Google */}
+        {currentUser && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.7) 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '16px',
+            padding: '14px',
+            marginBottom: '14px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#34d399', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <UserCheck size={16} />
+                <span>Akun Google Terhubung</span>
+              </div>
+              <span style={{
+                fontSize: '0.66rem',
+                background: 'rgba(16, 185, 129, 0.2)',
+                color: '#10b981',
+                padding: '2px 8px',
+                borderRadius: '999px',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                fontWeight: 600
+              }}>
+                Terautentikasi
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              {currentUser.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt={currentUser.displayName}
+                  style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid var(--primary)' }}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1rem',
+                  fontWeight: 800,
+                  color: '#fff'
+                }}>
+                  {currentUser.displayName ? currentUser.displayName[0].toUpperCase() : 'U'}
+                </div>
+              )}
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentUser.displayName || 'Pengguna'}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentUser.email}
+                </div>
+                {currentUser.isDemo && (
+                  <div style={{ fontSize: '0.68rem', color: '#f59e0b', marginTop: 2 }}>
+                    (Mode Uji Coba / Demo Google)
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ width: '100%', padding: '8px 12px', fontSize: '0.78rem', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+              onClick={() => {
+                onLogout();
+                onClose();
+              }}
+            >
+              <LogOut size={14} />
+              <span>Keluar (Logout dari Akun Ini)</span>
+            </button>
+          </div>
+        )}
+
+        {/* 2. Pembatasan Email Single User (Whitelist) */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '16px',
+          padding: '14px',
+          marginBottom: '14px'
+        }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Lock size={15} color="#38bdf8" />
+            <span>Batasi Akses Akun (Whitelist Email)</span>
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
+            Opsional: Masukkan email Google spesifik Anda. Jika diisi, hanya email ini yang dapat masuk ke aplikasi ini. Kosongkan untuk mengizinkan akun Google pribadi mana pun.
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="email"
+              className="form-input"
+              value={allowedEmail}
+              onChange={(e) => setAllowedEmailInput(e.target.value)}
+              placeholder="Contoh: gilbert.nanas23@gmail.com"
+            />
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ padding: '0 14px', flexShrink: 0 }}
+              onClick={handleSaveAllowedEmail}
+            >
+              Terapkan
+            </button>
+          </div>
+        </div>
+
+        {/* 3. Pengaturan Uang Saku Bulanan */}
         <div style={{
           background: 'rgba(255, 255, 255, 0.03)',
           border: '1px solid var(--border-subtle)',
@@ -141,7 +288,7 @@ export function SettingsModal({
           </div>
         </div>
 
-        {/* 2. Integrasi Firebase Firestore */}
+        {/* 4. Integrasi Firebase Firestore & Auth */}
         <div style={{
           background: 'rgba(255, 255, 255, 0.03)',
           border: '1px solid var(--border-subtle)',
@@ -152,14 +299,14 @@ export function SettingsModal({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Cloud size={16} />
-              <span>Koneksi Firebase Firestore</span>
+              <span>Koneksi Firebase Cloud (Firestore & Auth)</span>
             </div>
             <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Cloud Sync</span>
           </div>
 
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.4 }}>
-            Secara default aplikasi menggunakan <strong>Local Offline Storage</strong> (langsung aktif dan cepat).
-            Untuk sinkronisasi realtime lintas perangkat atau cloud database, masukkan kredensial Firebase berikut:
+            Digunakan untuk autentikasi Google resmi dan sinkronisasi data antar perangkat.
+            Kredensial dapat dimasukkan di sini atau melalui file <code style={{ color: '#fff' }}>.env</code>:
           </div>
 
           <div className="form-group">
@@ -167,7 +314,7 @@ export function SettingsModal({
             <input
               type="text"
               className="form-input"
-              placeholder="Contoh: smart-grocery-rian"
+              placeholder="Contoh: smart-grocery-tracker"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
             />
@@ -189,7 +336,7 @@ export function SettingsModal({
             <input
               type="text"
               className="form-input"
-              placeholder="smart-grocery-rian.firebaseapp.com"
+              placeholder="smart-grocery-tracker.firebaseapp.com"
               value={authDomain}
               onChange={(e) => setAuthDomain(e.target.value)}
             />
@@ -233,42 +380,21 @@ export function SettingsModal({
           </div>
         </div>
 
-        {/* 3. Panduan Deploy Vercel */}
+        {/* 5. Reset Data */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '16px',
-          padding: '14px',
-          marginBottom: '14px'
+          borderTop: '1px solid var(--border-subtle)',
+          paddingTop: '16px',
+          marginTop: '16px'
         }}>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Server size={16} />
-            <span>Kesiapan Deploy ke Vercel</span>
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-            File <code style={{ color: '#fff' }}>vercel.json</code> sudah terkonfigurasi otomatis dengan routing SPA dan caching PWA.
-            Cukup push repository ini ke GitHub lalu import ke Vercel dengan build command <code style={{ color: '#fff' }}>npm run build</code>.
-          </div>
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{ width: '100%', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+            onClick={handleResetSample}
+          >
+            Reset Seluruh Data Belanja ke Sampel Awal
+          </button>
         </div>
-
-        {/* 4. Reset Data Awal */}
-        <button
-          type="button"
-          onClick={handleResetSample}
-          style={{
-            width: '100%',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#f87171',
-            borderRadius: '12px',
-            padding: '10px',
-            fontSize: '0.76rem',
-            fontWeight: 700,
-            cursor: 'pointer'
-          }}
-        >
-          Reset Seluruh Data ke Sampel Asli Rian
-        </button>
       </div>
     </div>
   );

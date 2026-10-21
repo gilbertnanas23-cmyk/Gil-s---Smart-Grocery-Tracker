@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ShoppingCart, CheckCircle, Sparkles, Filter, RefreshCw, ShoppingBag } from 'lucide-react';
+import { Plus, ShoppingCart, CheckCircle, Sparkles, Filter, RefreshCw, ShoppingBag, ShieldCheck } from 'lucide-react';
 import { Header } from './components/Header';
 import { BudgetSafetyGauge } from './components/BudgetSafetyGauge';
 import { GroceryItemCard } from './components/GroceryItemCard';
@@ -9,6 +9,7 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { HistoryView } from './components/HistoryView';
 import { BudgetAnalyticsView } from './components/BudgetAnalyticsView';
 import { SettingsModal } from './components/SettingsModal';
+import { LoginView } from './components/LoginView';
 import { BottomNav } from './components/BottomNav';
 import {
   getLocalCart,
@@ -20,14 +21,23 @@ import {
   getPastSessions,
   savePastSessions,
   checkoutSession,
-  triggerCloudSync
+  triggerCloudSync,
+  syncUserDataFromCloud
 } from './services/storage';
-import { getFirebaseInstance } from './services/firebase';
+import {
+  getFirebaseInstance,
+  getStoredAuthUser,
+  initAuthListener,
+  signOutUser
+} from './services/firebase';
 import { calculateTieredDiscount } from './utils/calculations';
 import { formatRupiah } from './utils/formatters';
 
 export function App() {
-  // Main states
+  // Authentication & Single-User state
+  const [currentUser, setCurrentUser] = useState(() => getStoredAuthUser());
+
+  // Main application states
   const [cart, setCart] = useState(() => getLocalCart());
   const [budgetCap, setBudgetCap] = useState(() => getLocalBudget());
   const [catalog, setCatalog] = useState(() => getMasterCatalog());
@@ -48,6 +58,55 @@ export function App() {
     const { isConfigured } = getFirebaseInstance();
     return isConfigured;
   });
+
+  // Listen to Auth State changes on mount
+  useEffect(() => {
+    const unsubscribe = initAuthListener((user) => {
+      setCurrentUser(user);
+      if (user) {
+        // Coba sinkronisasi data dari cloud Firestore
+        syncUserDataFromCloud(user.uid).then((cloudData) => {
+          if (cloudData) {
+            if (cloudData.cart) setCart(cloudData.cart);
+            if (cloudData.budgetCap) setBudgetCap(cloudData.budgetCap);
+            if (cloudData.catalog) setCatalog(cloudData.catalog);
+            if (cloudData.history) setSessions(cloudData.history);
+          }
+        });
+      }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, []);
+
+  // Update firebase connection status
+  useEffect(() => {
+    const { isConfigured } = getFirebaseInstance();
+    setFirebaseStatus(isConfigured);
+  }, [isSettingsModalOpen]);
+
+  // Handle successful login
+  const handleLoginSuccess = async (user) => {
+    setCurrentUser(user);
+    // Sinkronkan data cloud milik user jika ada
+    if (user && user.uid) {
+      const cloudData = await syncUserDataFromCloud(user.uid);
+      if (cloudData) {
+        if (cloudData.cart) setCart(cloudData.cart);
+        if (cloudData.budgetCap) setBudgetCap(cloudData.budgetCap);
+        if (cloudData.catalog) setCatalog(cloudData.catalog);
+        if (cloudData.history) setSessions(cloudData.history);
+      }
+    }
+  };
+
+  // Handle user logout
+  const handleLogout = async () => {
+    await signOutUser();
+    setCurrentUser(null);
+  };
 
   // Calculate cart items with net line totals
   const enrichedCart = cart.map(item => {
@@ -152,6 +211,9 @@ export function App() {
     setIsDiscountModalOpen(true);
   };
 
+  const userDisplayName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
+  const userFirstName = userDisplayName.split(' ')[0];
+
   return (
     <div className="desktop-viewport-wrapper">
       {/* Ambient background glows for desktop preview */}
@@ -170,200 +232,216 @@ export function App() {
           </div>
         )}
 
-        {/* Top Header */}
-        <Header
-          isFirebaseConnected={firebaseStatus}
-          isFullScreen={isFullScreen}
-          onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onOpenDiscountCalc={() => {
-            setInvestigatingProduct(null);
-            setIsDiscountModalOpen(true);
-          }}
-        />
+        {/* TAMPILAN JIKA PENGGUNA BELUM LOGIN (Google Login Access Gateway) */}
+        {!currentUser ? (
+          <div className="app-screen login-screen-active">
+            <LoginView
+              onLoginSuccess={handleLoginSuccess}
+              onOpenSettings={() => setIsSettingsModalOpen(true)}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Top Header */}
+            <Header
+              currentUser={currentUser}
+              onLogout={handleLogout}
+              isFirebaseConnected={firebaseStatus}
+              isFullScreen={isFullScreen}
+              onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
+              onOpenSettings={() => setIsSettingsModalOpen(true)}
+              onOpenDiscountCalc={() => {
+                setInvestigatingProduct(null);
+                setIsDiscountModalOpen(true);
+              }}
+            />
 
-        {/* Scrollable Screen Content */}
-        <div className="app-screen">
-          <div className="app-content-scroll">
-            {/* TAB 1: TROLI BELANJA AKTIF */}
-            {activeTab === 'cart' && (
-              <div>
-                {/* F-05: Budget Safety Cap Gauge */}
-                <BudgetSafetyGauge
-                  totalCart={totalCart}
-                  budgetCap={budgetCap}
-                  onUpdateBudget={handleUpdateBudget}
-                  cartItems={enrichedCart}
-                  onRemoveItem={handleDeleteItem}
-                />
+            {/* Scrollable Screen Content */}
+            <div className="app-screen">
+              <div className="app-content-scroll">
+                {/* TAB 1: TROLI BELANJA AKTIF */}
+                {activeTab === 'cart' && (
+                  <div>
+                    {/* F-05: Budget Safety Cap Gauge */}
+                    <BudgetSafetyGauge
+                      totalCart={totalCart}
+                      budgetCap={budgetCap}
+                      onUpdateBudget={handleUpdateBudget}
+                      cartItems={enrichedCart}
+                      onRemoveItem={handleDeleteItem}
+                    />
 
-                {/* Section Header & Fast Actions */}
-                <div className="section-title-row">
-                  <div className="section-heading">
-                    <ShoppingCart size={17} color="var(--primary-light)" />
-                    <span>Daftar Belanjaan di Troli</span>
-                    <span className="section-count-badge">{enrichedCart.length} item</span>
-                  </div>
+                    {/* Section Header & Fast Actions */}
+                    <div className="section-title-row">
+                      <div className="section-heading">
+                        <ShoppingCart size={17} color="var(--primary-light)" />
+                        <span>Daftar Belanjaan di Troli</span>
+                        <span className="section-count-badge">{enrichedCart.length} item</span>
+                      </div>
 
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      className="icon-btn"
-                      style={{ width: 30, height: 30 }}
-                      onClick={() => setIsSettingsModalOpen(true)}
-                      title="Atur Budget"
-                    >
-                      <Filter size={13} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Empty State */}
-                {enrichedCart.length === 0 ? (
-                  <div className="empty-state-box">
-                    <div className="empty-state-icon">
-                      <ShoppingBag size={28} />
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="icon-btn"
+                          style={{ width: 30, height: 30 }}
+                          onClick={() => setIsSettingsModalOpen(true)}
+                          title="Atur Budget"
+                        >
+                          <Filter size={13} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="empty-state-title">Troli Masih Kosong</div>
-                    <div className="empty-state-desc">
-                      Rian belum memasukkan belanjaan ke troli. Tekan tombol di bawah untuk menambah barang atau muat ulang daftar bulan lalu!
-                    </div>
-                    <button
-                      className="btn-primary"
-                      onClick={() => setIsAddModalOpen(true)}
-                      style={{ marginTop: 8 }}
-                    >
-                      <Plus size={16} />
-                      <span>Tambah Barang Pertama</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grocery-items-container">
-                    {enrichedCart.map(item => (
-                      <GroceryItemCard
-                        key={item.id}
-                        item={item}
-                        onUpdateQty={handleUpdateQty}
-                        onDeleteItem={handleDeleteItem}
-                        onOpenPromoInvestigator={handleOpenPromoInvestigator}
-                        onEditItem={(itemToEdit) => {
-                          setEditingItem(itemToEdit);
+
+                    {/* Empty State */}
+                    {enrichedCart.length === 0 ? (
+                      <div className="empty-state-box">
+                        <div className="empty-state-icon">
+                          <ShoppingBag size={28} />
+                        </div>
+                        <div className="empty-state-title">
+                          {userFirstName ? `Halo ${userFirstName}, Troli Masih Kosong` : 'Troli Masih Kosong'}
+                        </div>
+                        <div className="empty-state-desc">
+                          Kamu belum memasukkan belanjaan ke troli. Tekan tombol di bawah untuk menambah barang atau muat ulang daftar belanjaan bulan lalu!
+                        </div>
+                        <button
+                          className="btn-primary"
+                          onClick={() => setIsAddModalOpen(true)}
+                          style={{ marginTop: 8 }}
+                        >
+                          <Plus size={16} />
+                          <span>Tambah Barang Pertama</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grocery-items-container">
+                        {enrichedCart.map(item => (
+                          <GroceryItemCard
+                            key={item.id}
+                            item={item}
+                            onUpdateQty={handleUpdateQty}
+                            onDeleteItem={handleDeleteItem}
+                            onOpenPromoInvestigator={handleOpenPromoInvestigator}
+                            onEditItem={(itemToEdit) => {
+                              setEditingItem(itemToEdit);
+                              setIsAddModalOpen(true);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Primary Action Buttons (Thumb-Friendly) */}
+                    <div className="floating-action-container">
+                      <button
+                        className="btn-primary"
+                        onClick={() => {
+                          setEditingItem(null);
                           setIsAddModalOpen(true);
                         }}
-                      />
-                    ))}
+                      >
+                        <Plus size={18} strokeWidth={2.6} />
+                        <span>+ Barang</span>
+                      </button>
+
+                      <button
+                        className="btn-checkout"
+                        onClick={() => setIsCheckoutModalOpen(true)}
+                        disabled={enrichedCart.length === 0}
+                        style={{ opacity: enrichedCart.length === 0 ? 0.5 : 1 }}
+                      >
+                        <CheckCircle size={18} />
+                        <span>Ke Kasir</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                {/* Primary Action Buttons (Thumb-Friendly) */}
-                <div className="floating-action-container">
-                  <button
-                    className="btn-primary"
-                    onClick={() => {
-                      setEditingItem(null);
-                      setIsAddModalOpen(true);
-                    }}
-                  >
-                    <Plus size={18} strokeWidth={2.6} />
-                    <span>+ Barang</span>
-                  </button>
+                {/* TAB 2: INVESTIGATOR DISKON & UKURAN KEMASAN (F-03) */}
+                {activeTab === 'promo' && (
+                  <div>
+                    <div style={{ marginBottom: 12 }}>
+                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Sparkles size={18} color="#f59e0b" />
+                        <span>Investigator Promo Supermarket</span>
+                      </h2>
+                      <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        Kalkulator pembongkar promo cuci gudang bertingkat (50% + 20%) & perbandingan kemasan (1L vs 5L).
+                      </p>
+                    </div>
 
-                  <button
-                    className="btn-checkout"
-                    onClick={() => setIsCheckoutModalOpen(true)}
-                    disabled={enrichedCart.length === 0}
-                    style={{ opacity: enrichedCart.length === 0 ? 0.5 : 1 }}
-                  >
-                    <CheckCircle size={18} />
-                    <span>Ke Kasir</span>
-                  </button>
-                </div>
+                    <DiscountCalculatorModal
+                      isOpen={true}
+                      onClose={() => setActiveTab('cart')}
+                      initialProduct={investigatingProduct}
+                      onApplyToCart={(promoProduct) => {
+                        handleSaveItem({
+                          id: `cart-${Date.now()}`,
+                          name: promoProduct.name,
+                          category: promoProduct.category || 'kebersihan',
+                          unit: promoProduct.unit || 'botol',
+                          qty: 1,
+                          unitPrice: promoProduct.unitPrice,
+                          lastMonthPrice: null,
+                          discountString: promoProduct.discountString,
+                          checked: true
+                        });
+                        setActiveTab('cart');
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* TAB 3: RIWAYAT STRUK & DATABASE BULAN LALU (F-06) */}
+                {activeTab === 'history' && (
+                  <div>
+                    <div style={{ marginBottom: 12 }}>
+                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+                        Riwayat Belanja & Struk Digital
+                      </h2>
+                      <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        Arsip struk tersimpan aman di akun Anda untuk patokan harga bulan berikutnya.
+                      </p>
+                    </div>
+
+                    <HistoryView
+                      sessions={sessions}
+                      catalog={catalog}
+                      onReloadSessionToCart={handleReloadSessionToCart}
+                      onRefreshData={handleResetData}
+                    />
+                  </div>
+                )}
+
+                {/* TAB 4: ANALISIS PENGELUARAN & ANGGARAN */}
+                {activeTab === 'analytics' && (
+                  <div>
+                    <div style={{ marginBottom: 12 }}>
+                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+                        Analisis Alokasi Belanja Pribadi
+                      </h2>
+                      <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        Pantau pos pengeluaran kebutuhan pokok vs pos lainnya secara transparan.
+                      </p>
+                    </div>
+
+                    <BudgetAnalyticsView
+                      cartItems={enrichedCart}
+                      budgetCap={budgetCap}
+                      sessions={sessions}
+                    />
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* TAB 2: INVESTIGATOR DISKON & UKURAN KEMASAN (F-03) */}
-            {activeTab === 'promo' && (
-              <div>
-                <div style={{ marginBottom: 12 }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Sparkles size={18} color="#f59e0b" />
-                    <span>Investigator Promo Supermarket</span>
-                  </h2>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Kalkulator pembongkar promo cuci gudang bertingkat (50% + 20%) & perbandingan kemasan (1L vs 5L).
-                  </p>
-                </div>
-
-                <DiscountCalculatorModal
-                  isOpen={true}
-                  onClose={() => setActiveTab('cart')}
-                  initialProduct={investigatingProduct}
-                  onApplyToCart={(promoProduct) => {
-                    handleSaveItem({
-                      id: `cart-${Date.now()}`,
-                      name: promoProduct.name,
-                      category: promoProduct.category || 'kebersihan',
-                      unit: promoProduct.unit || 'botol',
-                      qty: 1,
-                      unitPrice: promoProduct.unitPrice,
-                      lastMonthPrice: null,
-                      discountString: promoProduct.discountString,
-                      checked: true
-                    });
-                    setActiveTab('cart');
-                  }}
-                />
-              </div>
-            )}
-
-            {/* TAB 3: RIWAYAT STRUK & DATABASE BULAN LALU (F-06) */}
-            {activeTab === 'history' && (
-              <div>
-                <div style={{ marginBottom: 12 }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
-                    Riwayat Belanja & Struk Digital
-                  </h2>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Arsip struk tidak pernah pudar dan menjadi database resmi perbandingan harga bulan depan.
-                  </p>
-                </div>
-
-                <HistoryView
-                  sessions={sessions}
-                  catalog={catalog}
-                  onReloadSessionToCart={handleReloadSessionToCart}
-                  onRefreshData={handleResetData}
-                />
-              </div>
-            )}
-
-            {/* TAB 4: ANALISIS PENGELUARAN & ANGGARAN */}
-            {activeTab === 'analytics' && (
-              <div>
-                <div style={{ marginBottom: 12 }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
-                    Analisis Alokasi Belanja Anak Kos
-                  </h2>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Pantau pos pengeluaran kebutuhan pokok vs barang lainnya secara transparan.
-                  </p>
-                </div>
-
-                <BudgetAnalyticsView
-                  cartItems={enrichedCart}
-                  budgetCap={budgetCap}
-                  sessions={sessions}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Floating Native Bottom Navigation Bar */}
-          <BottomNav
-            activeTab={activeTab}
-            onSelectTab={setActiveTab}
-            cartItemCount={enrichedCart.length}
-          />
-        </div>
+              {/* Floating Native Bottom Navigation Bar */}
+              <BottomNav
+                activeTab={activeTab}
+                onSelectTab={setActiveTab}
+                cartItemCount={enrichedCart.length}
+              />
+            </div>
+          </>
+        )}
       </main>
 
       {/* MODALS */}
@@ -392,8 +470,11 @@ export function App() {
         budgetCap={budgetCap}
         onUpdateBudget={handleUpdateBudget}
         onResetData={handleResetData}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
     </div>
   );
 }
+
 export default App;

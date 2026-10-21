@@ -48,7 +48,7 @@ export function CheckoutModal({
 
   const handleCopyReceipt = () => {
     const lines = [
-      `🛒 STRUK BELANJA BULANAN RIAN`,
+      `🛒 STRUK BELANJA BULANAN PRIBADI`,
       `Tanggal: ${new Date().toLocaleDateString('id-ID')}`,
       `---------------------------------`,
       ...cartItems.map(item => `- ${item.name} (${item.qty}x @ ${formatRupiah(item.unitPrice)}) = ${formatRupiah(item.lineTotal)}`),

@@ -40,7 +40,7 @@ export function DiscountCalculatorModal({
         <div className="modal-header-row">
           <h2 className="modal-title">
             <Sparkles size={20} color="#f59e0b" />
-            Investigator Promo & Diskon Rian
+            Investigator Promo & Diskon Pintar
           </h2>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />

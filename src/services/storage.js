@@ -3,7 +3,7 @@ import {
   INITIAL_CART_ITEMS,
   INITIAL_PAST_SESSIONS
 } from '../data/defaultProducts';
-import { syncCartToCloud, fetchCartFromCloud, getFirebaseInstance } from './firebase';
+import { syncCartToCloud, fetchCartFromCloud, getFirebaseInstance, getStoredAuthUser } from './firebase';
 
 const KEYS = {
   CART: 'smart_grocery_cart_v1',
@@ -19,7 +19,7 @@ export function getLocalBudget() {
     const val = Number(saved);
     if (!isNaN(val) && val > 0) return val;
   }
-  return 500000; // Rp 500.000 (Jatah belanja bulanan anak kos Rian)
+  return 500000; // Rp 500.000 (Jatah belanja bulanan default)
 }
 
 export function saveLocalBudget(amount) {
@@ -83,7 +83,7 @@ export function savePastSessions(sessions) {
 }
 
 /**
- * Trigger background sync ke Cloud Firebase jika terhubung
+ * Trigger background sync ke Cloud Firebase Firestore untuk akun single-user yang aktif
  */
 let debounceTimer = null;
 export function triggerCloudSync() {
@@ -93,14 +93,20 @@ export function triggerCloudSync() {
     if (!isConfigured) return;
 
     try {
+      const user = getStoredAuthUser();
+      if (!user || !user.uid) return;
+
       const payload = {
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName,
         budgetCap: getLocalBudget(),
         cart: getLocalCart(),
         catalog: getMasterCatalog(),
         history: getPastSessions(),
         syncedAt: new Date().toISOString()
       };
-      await syncCartToCloud('rian_default', payload);
+      await syncCartToCloud(user.uid, payload);
     } catch (e) {
       console.warn('Sync cloud background gagal:', e);
     }
@@ -108,9 +114,29 @@ export function triggerCloudSync() {
 }
 
 /**
+ * Muat data dari Firestore Cloud ke Local Storage saat user login
+ */
+export async function syncUserDataFromCloud(userId) {
+  if (!userId) return null;
+  try {
+    const cloudData = await fetchCartFromCloud(userId);
+    if (cloudData) {
+      if (cloudData.budgetCap) localStorage.setItem(KEYS.BUDGET, String(cloudData.budgetCap));
+      if (Array.isArray(cloudData.cart)) localStorage.setItem(KEYS.CART, JSON.stringify(cloudData.cart));
+      if (Array.isArray(cloudData.catalog)) localStorage.setItem(KEYS.CATALOG, JSON.stringify(cloudData.catalog));
+      if (Array.isArray(cloudData.history)) localStorage.setItem(KEYS.HISTORY, JSON.stringify(cloudData.history));
+      return cloudData;
+    }
+  } catch (err) {
+    console.warn('Gagal sinkronisasi data cloud user:', err);
+  }
+  return null;
+}
+
+/**
  * Selesai Belanja / Checkout:
  * Mengarsipkan troli saat ini menjadi riwayat resmi,
- * dan memperbarui harga patokan (master catalog) untuk bulan berikutnya!
+ * dan memperbarui harga patokan (master catalog) untuk belanja berikutnya.
  */
 export function checkoutSession({ title, budgetCap, totalSpent, totalSaved, cartItems }) {
   const newSession = {
@@ -138,7 +164,7 @@ export function checkoutSession({ title, budgetCap, totalSpent, totalSaved, cart
   const updatedSessions = [newSession, ...currentSessions];
   savePastSessions(updatedSessions);
 
-  // Update master catalog: harga belanja saat ini otomatis menjadi "harga bulan lalu" untuk belanja selanjutnya!
+  // Update master catalog: harga belanja saat ini otomatis menjadi "harga bulan lalu" untuk belanja selanjutnya
   const catalog = getMasterCatalog();
   const catalogMap = new Map(catalog.map(c => [c.name.toLowerCase().trim(), c]));
 
@@ -171,7 +197,7 @@ export function checkoutSession({ title, budgetCap, totalSpent, totalSaved, cart
 }
 
 /**
- * Reset seluruh data ke dataset awal Rian
+ * Reset seluruh data ke dataset awal
  */
 export function resetToDefaults() {
   localStorage.setItem(KEYS.BUDGET, '500000');
@@ -182,7 +208,7 @@ export function resetToDefaults() {
 }
 
 /**
- * Ekspor seluruh data Rian ke JSON
+ * Ekspor seluruh data belanja ke JSON
  */
 export function exportAllData() {
   return {
