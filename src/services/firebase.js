@@ -9,6 +9,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from 'firebase/auth';
+import { loginWithSupabase, getSupabaseInstance } from './supabase';
 
 const STORAGE_KEY = 'smart_grocery_firebase_config';
 const AUTH_STORAGE_KEY = 'smart_grocery_auth_user_v1';
@@ -127,7 +128,7 @@ export async function testFirebaseConnection(configToTest) {
  */
 export function getStoredAuthUser() {
   try {
-    const saved = localStorage.getItem(AUTH_STORAGE_KEY);
+    const saved = localStorage.getItem(AUTH_STORAGE_KEY) || sessionStorage.getItem(AUTH_STORAGE_KEY);
     if (saved) {
       return JSON.parse(saved);
     }
@@ -138,7 +139,7 @@ export function getStoredAuthUser() {
 }
 
 /**
- * Login dengan Email dan Password (mendukung Remember Me)
+ * Login dengan Email dan Password (mendukung Remember Me, Supabase, Firebase, dan Offline fallback)
  */
 export async function loginWithEmailAndPassword(email, password, rememberMe = true) {
   if (!email || !email.trim()) {
@@ -159,6 +160,21 @@ export async function loginWithEmailAndPassword(email, password, rememberMe = tr
     };
   }
 
+  // 1. Coba Autentikasi via Supabase jika terkonfigurasi
+  const { isConfigured: isSupabaseConfigured } = getSupabaseInstance();
+  if (isSupabaseConfigured) {
+    const supaRes = await loginWithSupabase(cleanEmail, password);
+    if (supaRes.success && supaRes.user) {
+      if (rememberMe) {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(supaRes.user));
+      } else {
+        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(supaRes.user));
+      }
+      return supaRes;
+    }
+  }
+
+  // 2. Coba Autentikasi via Firebase jika terkonfigurasi
   const { auth, isConfigured } = getFirebaseInstance();
   if (isConfigured && auth) {
     try {
@@ -204,7 +220,7 @@ export async function loginWithEmailAndPassword(email, password, rememberMe = tr
     }
   }
 
-  // Sesi akun lokal / offline
+  // 3. Sesi akun offline/mandiri fallback
   const namePart = cleanEmail.split('@')[0];
   const formattedName = namePart
     .replace(/[._]/g, ' ')
@@ -333,7 +349,18 @@ export async function signOutUser() {
       console.warn('Firebase signout error:', e);
     }
   }
+
+  const { supabase, isConfigured: isSupabaseReady } = getSupabaseInstance();
+  if (isSupabaseReady && supabase) {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn('Supabase signout error:', e);
+    }
+  }
+
   localStorage.removeItem(AUTH_STORAGE_KEY);
+  sessionStorage.removeItem(AUTH_STORAGE_KEY);
   return { success: true };
 }
 

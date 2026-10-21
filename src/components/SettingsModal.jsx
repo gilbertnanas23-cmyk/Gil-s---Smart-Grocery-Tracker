@@ -23,6 +23,11 @@ import {
   getAllowedGoogleEmail,
   setAllowedGoogleEmail
 } from '../services/firebase';
+import {
+  getSupabaseConfig,
+  saveCustomSupabaseConfig,
+  testSupabaseConnection
+} from '../services/supabase';
 import { resetToDefaults, triggerCloudSync } from '../services/storage';
 import { formatRupiah } from '../utils/formatters';
 
@@ -44,16 +49,52 @@ export function SettingsModal({
     appId: ''
   };
 
+  const existingSupabase = getSupabaseConfig() || {
+    url: '',
+    anonKey: ''
+  };
+
   const [projectId, setProjectId] = useState(existingConfig.projectId || '');
   const [apiKey, setApiKey] = useState(existingConfig.apiKey || '');
   const [authDomain, setAuthDomain] = useState(existingConfig.authDomain || '');
   const [testResult, setTestResult] = useState(null);
   const [testing, setTesting] = useState(false);
+
+  const [supabaseUrl, setSupabaseUrl] = useState(existingSupabase.url || '');
+  const [supabaseKey, setSupabaseKey] = useState(existingSupabase.anonKey || '');
+  const [supabaseTestResult, setSupabaseTestResult] = useState(null);
+  const [supabaseTesting, setSupabaseTesting] = useState(false);
+  const [showSqlGuide, setShowSqlGuide] = useState(false);
+
   const [customBudget, setCustomBudget] = useState(budgetCap);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [allowedEmail, setAllowedEmailInput] = useState(() => getAllowedGoogleEmail());
 
   if (!isOpen) return null;
+
+  const handleSaveSupabase = () => {
+    if (!supabaseUrl && !supabaseKey) {
+      saveCustomSupabaseConfig(null);
+      setSupabaseTestResult({ success: true, message: 'Supabase dinonaktifkan (mode offline).' });
+      return;
+    }
+
+    saveCustomSupabaseConfig({
+      url: supabaseUrl.trim(),
+      anonKey: supabaseKey.trim()
+    });
+    setSavedSuccess(true);
+    triggerCloudSync();
+    setTimeout(() => setSavedSuccess(false), 2500);
+  };
+
+  const handleTestSupabase = async () => {
+    setSupabaseTesting(true);
+    setSupabaseTestResult(null);
+    const res = await testSupabaseConnection(supabaseUrl, supabaseKey);
+    setSupabaseTestResult(res);
+    setSupabaseTesting(false);
+  };
 
   const handleSaveFirebase = async () => {
     if (!projectId && !apiKey) {
@@ -288,7 +329,140 @@ export function SettingsModal({
           </div>
         </div>
 
-        {/* 4. Integrasi Firebase Firestore & Auth */}
+        {/* 4. Integrasi Supabase Cloud (Database & Auth) */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(16, 185, 129, 0.25)',
+          borderRadius: '16px',
+          padding: '14px',
+          marginBottom: '14px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Database size={16} />
+              <span>Koneksi Supabase (PostgreSQL & Auth)</span>
+            </div>
+            <span style={{
+              fontSize: '0.66rem',
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#10b981',
+              padding: '2px 8px',
+              borderRadius: '999px',
+              fontWeight: 600
+            }}>
+              Supabase DB
+            </span>
+          </div>
+
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.4 }}>
+            Sinkronkan keranjang belanja dan autentikasi akun ke Supabase Cloud. Kredensial dapat disimpan di sini atau di file <code style={{ color: '#fff' }}>.env</code>:
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Supabase Project URL</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="https://xyzcompany.supabase.co"
+              value={supabaseUrl}
+              onChange={(e) => setSupabaseUrl(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Supabase Anon Public Key</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="eyJhbGciOiJIUzI1NiIsIn..."
+              value={supabaseKey}
+              onChange={(e) => setSupabaseKey(e.target.value)}
+            />
+          </div>
+
+          {supabaseTestResult && (
+            <div style={{
+              background: supabaseTestResult.success ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+              border: `1px solid ${supabaseTestResult.success ? '#10b981' : '#ef4444'}`,
+              color: supabaseTestResult.success ? '#34d399' : '#f87171',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              fontSize: '0.74rem',
+              marginBottom: 10
+            }}>
+              {supabaseTestResult.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ flex: 1, padding: '10px' }}
+              onClick={handleTestSupabase}
+              disabled={supabaseTesting || !supabaseUrl}
+            >
+              <RefreshCw size={14} className={supabaseTesting ? 'animate-spin' : ''} />
+              <span>{supabaseTesting ? 'Menguji...' : 'Uji Koneksi Supabase'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ flex: 1, padding: '10px' }}
+              onClick={handleSaveSupabase}
+            >
+              <Check size={16} />
+              <span>Terapkan Supabase</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowSqlGuide(!showSqlGuide)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-dim)',
+              fontSize: '0.68rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: 0
+            }}
+          >
+            <HelpCircle size={12} />
+            <span>{showSqlGuide ? 'Sembunyikan Panduan SQL Supabase' : 'Lihat Skema Tabel Supabase (SQL Editor)'}</span>
+          </button>
+
+          {showSqlGuide && (
+            <div style={{
+              marginTop: 8,
+              padding: '10px',
+              background: 'rgba(0, 0, 0, 0.4)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              fontSize: '0.68rem',
+              color: 'var(--text-muted)',
+              fontFamily: 'monospace',
+              lineHeight: 1.5,
+              whiteSpace: 'pre-wrap'
+            }}>
+{`-- Jalankan di Supabase Dashboard > SQL Editor:
+create table if not exists grocery_user_data (
+  user_id text primary key,
+  data jsonb,
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table grocery_user_data enable row level security;
+create policy "Akses Data Belanja" on grocery_user_data for all using (true) with check (true);`}
+            </div>
+          )}
+        </div>
+
+        {/* 5. Integrasi Firebase Firestore & Auth */}
         <div style={{
           background: 'rgba(255, 255, 255, 0.03)',
           border: '1px solid var(--border-subtle)',
@@ -301,7 +475,7 @@ export function SettingsModal({
               <Cloud size={16} />
               <span>Koneksi Firebase Cloud (Firestore & Auth)</span>
             </div>
-            <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Cloud Sync</span>
+            <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Firebase Sync</span>
           </div>
 
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.4 }}>

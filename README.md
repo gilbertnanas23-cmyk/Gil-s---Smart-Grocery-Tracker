@@ -84,18 +84,51 @@ Aplikasi menggunakan arsitektur **Hybrid Storage**:
 
 ---
 
-## 🌐 Panduan Deployment ke Vercel
+## ⚡ Integrasi Supabase Cloud (PostgreSQL Database & Auth)
 
-Proyek ini telah dilengkapi file konfigurasi [vercel.json](file:///c:/Users/Student/Documents/Gil-s---Smart-Grocery-Tracker/vercel.json) untuk optimasi SPA dan PWA headers.
+Aplikasi mendukung koneksi langsung ke **Supabase** untuk sinkronisasi database dan autentikasi:
 
-### Langkah Deploy:
-1. Unggah kode ke repositori GitHub:
-   ```bash
-   git add .
-   git commit -m "feat: single user mode with google email authentication"
-   git push origin main
+1. Buat proyek baru di [Supabase Dashboard](https://supabase.com/).
+2. Buka **SQL Editor** di Supabase dan jalankan script berikut untuk membuat tabel penyimpanan troli:
+   ```sql
+   create table if not exists grocery_user_data (
+     user_id text primary key,
+     data jsonb,
+     updated_at timestamp with time zone default timezone('utc'::text, now())
+   );
+
+   alter table grocery_user_data enable row level security;
+   create policy "Akses Data Belanja" on grocery_user_data for all using (true) with check (true);
    ```
-2. Buka dashboard [Vercel](https://vercel.com/) dan import repository Anda.
-3. Build command: `npm run build`, output: `dist`.
-4. Masukkan Environment Variables Firebase pada menu Project Settings di Vercel.
-5. Klik **Deploy**!
+3. Salin **Project URL** dan **Anon Public Key** dari menu *Project Settings > API*.
+4. Masukkan ke file `.env` atau langsung di menu **Pengaturan (Gear)** di aplikasi:
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsIn...
+   ```
+5. Klik tombol **Uji Koneksi Supabase** untuk memastikan sambungan sukses.
+
+---
+
+## 🌐 Panduan Deployment ke Vercel & Mengapa Tampilan Sebelumnya Belum Terupdate
+
+### Kenapa Vercel Belum Menampilkan Update Terbaru?
+1. **Cache PWA / Service Worker Browser**: Aplikasi ini adalah Progressive Web App (PWA) yang menggunakan Service Worker (`sw.js`). Browser menyimpan file HTML/JS lama di Cache Storage lokal.
+   - **Solusi**: Tekan **Ctrl + Shift + R** (atau **Ctrl + F5**) di Google Chrome/Edge untuk memuat ulang file terbaru dan membersihkan cache lama.
+   - **Solusi Mobile**: Buka menu browser > *Settings* > *Clear Browsing Data* (pilih Cached Images and Files) atau buka di tab Incognito / Private Window.
+2. **Auto-Update Service Worker v2**: Kami telah memperbarui `sw.js` ke versi `v2-supabase` dan menambahkan header `no-cache, no-store, must-revalidate` pada `vercel.json` sehingga perubahan berikutnya akan langsung terupdate otomatis.
+
+### Langkah Deploy & Sambungkan ke Vercel:
+1. Hubungkan repository GitHub [Gil-s---Smart-Grocery-Tracker](https://github.com/gilbertnanas23-cmyk/Gil-s---Smart-Grocery-Tracker) ke [Vercel](https://vercel.com/):
+   - Masuk ke Vercel Dashboard > **Add New...** > **Project**
+   - Pilih repositori GitHub Anda.
+   - Framework Preset: **Vite**
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+2. Tambahkan Environment Variables di Vercel (*Project Settings > Environment Variables*):
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_FIREBASE_API_KEY` (opsional)
+   - `VITE_FIREBASE_PROJECT_ID` (opsional)
+   - `VITE_ALLOWED_GOOGLE_EMAIL` (opsional)
+3. Setiap kali Anda melakukan `git push origin main`, Vercel akan secara otomatis membangun (*auto-build*) dan mempublikasikan versi terbaru dalam hitungan detik!

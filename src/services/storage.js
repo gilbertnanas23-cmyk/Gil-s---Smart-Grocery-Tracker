@@ -4,6 +4,7 @@ import {
   INITIAL_PAST_SESSIONS
 } from '../data/defaultProducts';
 import { syncCartToCloud, fetchCartFromCloud, getFirebaseInstance, getStoredAuthUser } from './firebase';
+import { syncCartToSupabase, fetchCartFromSupabase, getSupabaseInstance } from './supabase';
 
 const KEYS = {
   CART: 'smart_grocery_cart_v1',
@@ -83,14 +84,15 @@ export function savePastSessions(sessions) {
 }
 
 /**
- * Trigger background sync ke Cloud Firebase Firestore untuk akun single-user yang aktif
+ * Trigger background sync ke Cloud (Firebase Firestore dan/atau Supabase)
  */
 let debounceTimer = null;
 export function triggerCloudSync() {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(async () => {
-    const { isConfigured } = getFirebaseInstance();
-    if (!isConfigured) return;
+    const { isConfigured: isFirebaseConfigured } = getFirebaseInstance();
+    const { isConfigured: isSupabaseConfigured } = getSupabaseInstance();
+    if (!isFirebaseConfigured && !isSupabaseConfigured) return;
 
     try {
       const user = getStoredAuthUser();
@@ -106,7 +108,16 @@ export function triggerCloudSync() {
         history: getPastSessions(),
         syncedAt: new Date().toISOString()
       };
-      await syncCartToCloud(user.uid, payload);
+
+      // Sync ke Firebase jika terhubung
+      if (isFirebaseConfigured) {
+        await syncCartToCloud(user.uid, payload);
+      }
+
+      // Sync ke Supabase jika terhubung
+      if (isSupabaseConfigured) {
+        await syncCartToSupabase(user.uid, payload);
+      }
     } catch (e) {
       console.warn('Sync cloud background gagal:', e);
     }
@@ -114,12 +125,19 @@ export function triggerCloudSync() {
 }
 
 /**
- * Muat data dari Firestore Cloud ke Local Storage saat user login
+ * Muat data dari Cloud (Firebase / Supabase) ke Local Storage saat user login
  */
 export async function syncUserDataFromCloud(userId) {
   if (!userId) return null;
   try {
-    const cloudData = await fetchCartFromCloud(userId);
+    // 1. Coba dari Firestore
+    let cloudData = await fetchCartFromCloud(userId);
+
+    // 2. Jika tidak ada di Firestore, coba dari Supabase
+    if (!cloudData) {
+      cloudData = await fetchCartFromSupabase(userId);
+    }
+
     if (cloudData) {
       if (cloudData.budgetCap) localStorage.setItem(KEYS.BUDGET, String(cloudData.budgetCap));
       if (Array.isArray(cloudData.cart)) localStorage.setItem(KEYS.CART, JSON.stringify(cloudData.cart));
