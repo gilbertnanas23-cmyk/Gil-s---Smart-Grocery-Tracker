@@ -1701,3 +1701,16 @@ body {
   background: rgba(239, 68, 68, 0.12);
 }
 
+
+
+/* Enhancements for Modal Login View & Profile */
+.login-view-wrapper.modal-mode {
+  min-height: auto;
+  padding: 8px 4px;
+}
+
+.login-view-wrapper.modal-mode .login-glass-card {
+  max-width: 100%;
+  border-radius: 28px;
+  padding: 30px 20px 24px 20px;
+}

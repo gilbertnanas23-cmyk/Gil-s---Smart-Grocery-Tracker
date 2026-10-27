@@ -1,11 +1,11 @@
 /**
- * Utilitas Kalkulasi Matematis & Bisnis Logika Belanja Pintar Rian
- * Sesuai Spesifikasi SRS: F-01 sampai F-06
+ * Utilitas Kalkulasi Matematis & Bisnis Logika Belanja Pintar
+ * Sesuai Spesifikasi Rubrik Ujian Harian 2 (DT2): F-01 sampai F-06
  */
 
 /**
  * Parsing dan kalkulasi diskon bertingkat (contoh: "50% + 20%", "30+10", "25%")
- * Rumus: Harga Akhir = P * (1 - d1) * (1 - d2) * ...
+ * Rumus Resmi Guru: Harga Akhir = P * (1 - d1) * (1 - d2) * ...
  * @param {number} price - Harga asli
  * @param {string|number} discountInput - Input diskon seperti "50% + 20%" atau 25
  * @returns {{ finalPrice: number, totalSavings: number, effectiveDiscountPercent: number, breakdown: string }}
@@ -60,10 +60,7 @@ export function calculateTieredDiscount(price, discountInput) {
 
 /**
  * Investigasi Perbandingan Promo:
- * Membandingkan Promo Diskon Bertingkat vs Diskon Langsung Nominal (Kasus Botol Sabun Rian)
- * @param {number} basePrice
- * @param {string} tieredDiscountStr e.g. "50% + 20%"
- * @param {number} flatDiscountAmount e.g. 15000
+ * Membandingkan Promo Diskon Bertingkat vs Diskon Langsung Nominal
  */
 export function comparePromos(basePrice, tieredDiscountStr, flatDiscountAmount) {
   const p = Math.max(0, Number(basePrice) || 0);
@@ -104,7 +101,7 @@ export function comparePromos(basePrice, tieredDiscountStr, flatDiscountAmount) 
 
 /**
  * Kalkulasi Unit Price (Harga per Satuan Baku):
- * Membandingkan ukuran kemasan (Contoh Rian: Minyak 1L Rp 18.000 vs 5L Rp 85.000)
+ * Membandingkan ukuran kemasan (1L vs 5L)
  */
 export function calculateUnitPrice(price, amount, unit = 'pcs') {
   const p = Math.max(0, Number(price) || 0);
@@ -147,14 +144,19 @@ export function comparePackSizes({ nameA, priceA, sizeA, unitA }, { nameB, price
 
 /**
  * Deteksi Fluktuasi Harga Realtime vs Riwayat Bulan Lalu (F-04)
+ * Mendukung pencocokan toko spesifik (Store-Specific Comparison)
  * @param {number} currentPrice - Harga inputan saat ini
  * @param {number|null} lastMonthPrice - Harga bulan lalu
+ * @param {string} store - Nama toko saat ini
+ * @param {string} historicalStore - Nama toko pada data riwayat
  */
-export function compareHistoricalPrice(currentPrice, lastMonthPrice) {
+export function compareHistoricalPrice(currentPrice, lastMonthPrice, store = '', historicalStore = '') {
   const curr = Math.max(0, Number(currentPrice) || 0);
   const prev = lastMonthPrice !== null && lastMonthPrice !== undefined && lastMonthPrice > 0 
     ? Number(lastMonthPrice) 
     : null;
+
+  const isStoreMatched = !store || !historicalStore || store.toLowerCase().trim() === historicalStore.toLowerCase().trim();
 
   if (prev === null) {
     return {
@@ -165,12 +167,14 @@ export function compareHistoricalPrice(currentPrice, lastMonthPrice) {
       diffNominal: 0,
       diffPercent: 0,
       badgeColor: 'neutral',
+      storeMatched: isStoreMatched,
       advice: 'Belum ada riwayat harga bulan lalu. Harga ini akan menjadi patokan untuk bulan depan.'
     };
   }
 
   const diffNominal = curr - prev;
   const diffPercent = Math.round(((curr - prev) / prev) * 100);
+  const storeContextNote = store ? `di ${store}` : '';
 
   if (diffNominal > 0) {
     return {
@@ -181,7 +185,8 @@ export function compareHistoricalPrice(currentPrice, lastMonthPrice) {
       diffNominal,
       diffPercent,
       badgeColor: 'danger', // Merah
-      advice: `⚠️ Harga NAIK Rp ${diffNominal.toLocaleString('id-ID')} (${diffPercent}%) dibanding bulan lalu. Beli secukupnya saja!`
+      storeMatched: isStoreMatched,
+      advice: `⚠️ Harga NAIK Rp ${diffNominal.toLocaleString('id-ID')} (${diffPercent}%) dibanding bulan lalu ${storeContextNote}. Beli secukupnya!`
     };
   } else if (diffNominal < 0) {
     return {
@@ -192,7 +197,8 @@ export function compareHistoricalPrice(currentPrice, lastMonthPrice) {
       diffNominal: Math.abs(diffNominal),
       diffPercent: Math.abs(diffPercent),
       badgeColor: 'success', // Hijau
-      advice: `🎉 Harga TURUN Rp ${Math.abs(diffNominal).toLocaleString('id-ID')} (${Math.abs(diffPercent)}%)! Sedang murah, layak distok/diborong.`
+      storeMatched: isStoreMatched,
+      advice: `🎉 Harga TURUN Rp ${Math.abs(diffNominal).toLocaleString('id-ID')} (${Math.abs(diffPercent)}%) ${storeContextNote}! Sedang hemat, layak distok.`
     };
   } else {
     return {
@@ -202,16 +208,21 @@ export function compareHistoricalPrice(currentPrice, lastMonthPrice) {
       label: 'Stabil',
       diffNominal: 0,
       diffPercent: 0,
-      badgeColor: 'warning', // Stabil / Kuning
-      advice: 'Harga stabil, sama persis dengan bulan lalu.'
+      badgeColor: 'warning', // Stabil (Neutral Amber)
+      storeMatched: isStoreMatched,
+      advice: `Harga stabil, sama persis dengan bulan lalu ${storeContextNote} (selisih Rp 0).`
     };
   }
 }
 
 /**
  * Pengendali Anggaran (Budget Safety Cap) (F-05)
+ * Sesuai Rubrik Wajib Guru:
+ * - Dibawah 90%: Normal (Hijau)
+ * - 90% sampai 100%: Yellow Warning (Kuning)
+ * - Diatas 100%: Red Danger Banner (Merah Overbudget)
  * @param {number} totalCart - Total belanjaan saat ini
- * @param {number} budgetCap - Batas uang saku / tunai dompet
+ * @param {number} budgetCap - Batas uang saku / dompet belanja
  */
 export function calculateBudgetStatus(totalCart, budgetCap) {
   const total = Math.max(0, Number(totalCart) || 0);
@@ -230,15 +241,15 @@ export function calculateBudgetStatus(totalCart, budgetCap) {
     colorTheme = '#ef4444'; // Red
     alertMessage = `🚨 DARURAT KASIR! Total belanjaan melampaui dompet sebesar Rp ${Math.abs(remaining).toLocaleString('id-ID')}. Batalkan beberapa item sebelum mengantre!`;
   } else if (percentage >= 90) {
-    status = 'CRITICAL';
-    badgeText = 'Kritis (Bahaya)';
-    colorTheme = '#f97316'; // Orange / Red-orange
-    alertMessage = `⚠️ ZONA KRITIS! Belanjaan sudah mencapai ${percentage}% dompet. Sisa uang tunai tinggal Rp ${remaining.toLocaleString('id-ID')}.`;
-  } else if (percentage >= 70) {
     status = 'WARNING';
-    badgeText = 'Waspada';
-    colorTheme = '#eab308'; // Amber
-    alertMessage = `⚡ Hati-hati, sudah terpakai ${percentage}% dari total dompet. Sisa Rp ${remaining.toLocaleString('id-ID')}.`;
+    badgeText = 'Peringatan 90%';
+    colorTheme = '#eab308'; // Yellow
+    alertMessage = `⚠️ PERINGATAN KUNING! Belanjaan sudah mencapai ${percentage}% dompet. Sisa uang belanja tinggal Rp ${remaining.toLocaleString('id-ID')}.`;
+  } else if (percentage >= 70) {
+    status = 'SAFE';
+    badgeText = 'Waspada 70%';
+    colorTheme = '#10b981'; // Greenish
+    alertMessage = `⚡ Terpakai ${percentage}% dari total dompet. Sisa Rp ${remaining.toLocaleString('id-ID')}.`;
   } else {
     status = 'SAFE';
     badgeText = 'Terkendali';
@@ -276,4 +287,3 @@ export function calculateHistoricalPriceTrend(cartItems = []) {
 
   return { countUp, countDown, countEqual };
 }
-

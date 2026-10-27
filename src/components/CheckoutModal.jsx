@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, ShieldCheck, AlertOctagon, Printer, Share2, Sparkles, ShoppingBag } from 'lucide-react';
+import { X, CheckCircle, ShieldCheck, AlertOctagon, Printer, Share2, Sparkles, ShoppingBag, MapPin, Calendar } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatRupiah, formatDateTime } from '../utils/formatters';
 import { calculateBudgetStatus } from '../utils/calculations';
@@ -9,7 +9,9 @@ export function CheckoutModal({
   onClose,
   cartItems = [],
   budgetCap,
-  onFinishShopping
+  onFinishShopping,
+  currentStore = 'Lotte Mart Puri Indah',
+  currentDate = new Date().toISOString().split('T')[0]
 }) {
   const [sessionTitle, setSessionTitle] = useState(
     `Belanja Bulanan Kos - ${new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
@@ -41,7 +43,9 @@ export function CheckoutModal({
       budgetCap,
       totalSpent: totalCart,
       totalSaved: totalSavings,
-      cartItems
+      cartItems,
+      store: currentStore,
+      date: currentDate
     });
     onClose();
   };
@@ -49,7 +53,8 @@ export function CheckoutModal({
   const handleCopyReceipt = () => {
     const lines = [
       `🛒 STRUK BELANJA BULANAN PRIBADI`,
-      `Tanggal: ${new Date().toLocaleDateString('id-ID')}`,
+      `Lokasi/Toko: ${currentStore}`,
+      `Tanggal: ${currentDate}`,
       `---------------------------------`,
       ...cartItems.map(item => `- ${item.name} (${item.qty}x @ ${formatRupiah(item.unitPrice)}) = ${formatRupiah(item.lineTotal)}`),
       `---------------------------------`,
@@ -110,6 +115,28 @@ export function CheckoutModal({
                 ? `Total belanja melebihi isi dompet sebesar ${formatRupiah(Math.abs(budgetInfo.remaining))}. Kurangi barang sebelum mengantre.`
                 : `Total belanja ${formatRupiah(totalCart)} pas dalam batas saku (${formatRupiah(budgetCap)}). Tidak ada drama pembatalan di depan kasir!`}
             </div>
+          </div>
+        </div>
+
+        {/* Info Lokasi Toko & Tanggal */}
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          flexWrap: 'wrap',
+          background: 'rgba(255, 255, 255, 0.04)',
+          padding: '8px 12px',
+          borderRadius: '10px',
+          marginBottom: '12px',
+          fontSize: '0.76rem',
+          color: 'var(--text-muted)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <MapPin size={13} color="var(--primary)" />
+            <span style={{ color: '#fff', fontWeight: 600 }}>{currentStore}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Calendar size={13} color="#38bdf8" />
+            <span style={{ color: '#fff' }}>{currentDate}</span>
           </div>
         </div>
 

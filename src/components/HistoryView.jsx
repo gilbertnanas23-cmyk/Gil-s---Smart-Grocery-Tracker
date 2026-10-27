@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { History, Calendar, Search, ArrowUpRight, ArrowDownRight, Equal, Download, Upload, RefreshCw, ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  History,
+  Calendar,
+  Search,
+  ArrowUpRight,
+  ArrowDownRight,
+  Equal,
+  Download,
+  Upload,
+  RefreshCw,
+  ShoppingCart,
+  ChevronDown,
+  ChevronUp,
+  MapPin
+} from 'lucide-react';
 import { formatRupiah, formatDate } from '../utils/formatters';
 import { exportAllData, importAllData } from '../services/storage';
 
@@ -17,7 +31,8 @@ export function HistoryView({
   // Filter master catalog items
   const filteredCatalog = catalog.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.store && item.store.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const toggleSessionExpand = (id) => {
@@ -137,6 +152,8 @@ export function HistoryView({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {sessions.map(session => {
                 const isExpanded = expandedSessionId === session.id;
+                const sessionStore = session.store || 'Lotte Mart Puri Indah';
+
                 return (
                   <div key={session.id} className="history-session-card">
                     <div
@@ -145,7 +162,16 @@ export function HistoryView({
                     >
                       <div>
                         <div className="session-title">{session.title}</div>
-                        <div className="session-date">{formatDate(session.date)} • {session.itemsCount || session.items?.length || 0} barang</div>
+                        <div className="session-date" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span>{formatDate(session.date)}</span>
+                          <span>•</span>
+                          <span style={{ color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <MapPin size={10} />
+                            <span>{sessionStore}</span>
+                          </span>
+                          <span>•</span>
+                          <span>{session.itemsCount || session.items?.length || 0} barang</span>
+                        </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ textAlign: 'right' }}>
@@ -191,7 +217,7 @@ export function HistoryView({
                         <button
                           type="button"
                           className="btn-secondary"
-                          style={{ width: '100%', padding: '8px 12px', fontSize: '0.78rem' }}
+                          style={{ width: '100%', minHeight: '44px', padding: '8px 12px', fontSize: '0.78rem' }}
                           onClick={() => onReloadSessionToCart(session)}
                         >
                           <ShoppingCart size={14} />
@@ -217,21 +243,21 @@ export function HistoryView({
               type="text"
               className="form-input"
               style={{ paddingLeft: 36 }}
-              placeholder="Cari harga barang (contoh: Beras, Telur, Sabun)..."
+              placeholder="Cari harga barang atau toko (Lotte Mart, Beras, Telur)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>
-            Menampilkan patokan harga resmi untuk komparasi supermarket:
+            Menampilkan patokan harga resmi untuk komparasi toko & supermarket:
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {filteredCatalog.map(prod => {
               const prev = prod.lastMonthPrice;
               const curr = prod.currentPrice || prev;
-              const diff = curr - prev;
+              const prodStore = prod.store || 'Lotte Mart Puri Indah';
 
               return (
                 <div
@@ -250,8 +276,13 @@ export function HistoryView({
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>
                       {prod.name}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                      Satuan: {prod.unit || 'pcs'} • {prod.category}
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <span style={{ color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        <MapPin size={10} />
+                        <span>{prodStore}</span>
+                      </span>
+                      <span>•</span>
+                      <span>{prod.unit || 'pcs'} ({prod.category})</span>
                     </div>
                   </div>
 
@@ -272,3 +303,5 @@ export function HistoryView({
     </div>
   );
 }
+
+export default HistoryView;

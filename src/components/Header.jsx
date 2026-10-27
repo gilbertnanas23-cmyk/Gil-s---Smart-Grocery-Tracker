@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   ShoppingCart,
+  Database,
   Cloud,
   CloudOff,
   Smartphone,
@@ -8,7 +9,7 @@ import {
   Settings,
   Sparkles,
   LogOut,
-  UserCheck,
+  User,
   ShieldCheck,
   ChevronDown
 } from 'lucide-react';
@@ -16,7 +17,9 @@ import {
 export function Header({
   currentUser,
   onLogout,
-  isFirebaseConnected,
+  onOpenLogin,
+  onOpenProfile,
+  isSupabaseConnected,
   isFullScreen,
   onToggleFullScreen,
   onOpenSettings,
@@ -32,7 +35,7 @@ export function Header({
     return name.slice(0, 2).toUpperCase();
   };
 
-  const displayName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'Pribadi';
+  const displayName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'Tamu';
   const firstName = displayName.split(' ')[0];
 
   return (
@@ -44,26 +47,20 @@ export function Header({
         <div>
           <h1 className="brand-title">Smart Grocery</h1>
           <div className="brand-subtitle">
-            <span style={{ color: '#10b981', display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#10b981' }}></span>
-            <span>Budget Guard • {firstName}</span>
+            <span style={{
+              color: currentUser ? '#10b981' : '#94a3b8',
+              display: 'inline-block',
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: currentUser ? '#10b981' : '#94a3b8'
+            }}></span>
+            <span>{currentUser ? `Budget Guard • ${firstName}` : 'Mode Belanja Tamu'}</span>
           </div>
         </div>
       </div>
 
       <div className="header-actions">
-        {/* Firebase Sync Indicator */}
-        <button
-          className="icon-btn"
-          onClick={onOpenSettings}
-          title={isFirebaseConnected ? 'Firebase Cloud: Terhubung & Sinkron' : 'Firebase Cloud: Mode Lokal (Klik untuk Setup)'}
-        >
-          {isFirebaseConnected ? (
-            <Cloud size={18} color="#10b981" />
-          ) : (
-            <CloudOff size={18} color="#94a3b8" />
-          )}
-        </button>
-
         {/* Quick Promo Investigator Shortcut */}
         <button
           className="icon-btn"
@@ -87,13 +84,13 @@ export function Header({
         <button
           className="icon-btn"
           onClick={onOpenSettings}
-          title="Pengaturan Akun & Cloud"
+          title="Pengaturan Database & Cloud"
         >
           <Settings size={18} />
         </button>
 
-        {/* User Profile Avatar / Logout Trigger */}
-        {currentUser && (
+        {/* AUTH BUTTONS: LOGGED IN VS LOGGED OUT */}
+        {currentUser ? (
           <div className="header-user-wrapper">
             <button
               className="user-avatar-btn"
@@ -128,11 +125,22 @@ export function Header({
                     <div className="dropdown-user-email">{currentUser.email}</div>
                     <div className="dropdown-badge">
                       <ShieldCheck size={12} color="#10b981" />
-                      <span>Akun Google Terverifikasi</span>
+                      <span>{currentUser.provider === 'google' ? 'Google OAuth Terverifikasi' : 'Akun Terautentikasi'}</span>
                     </div>
                   </div>
 
                   <div className="dropdown-divider" />
+
+                  <button
+                    className="dropdown-menu-item"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      if (onOpenProfile) onOpenProfile();
+                    }}
+                  >
+                    <User size={14} color="var(--primary)" />
+                    <span>Profil Saya</span>
+                  </button>
 
                   <button
                     className="dropdown-menu-item"
@@ -143,17 +151,6 @@ export function Header({
                   >
                     <Settings size={14} />
                     <span>Pengaturan Aplikasi</span>
-                  </button>
-
-                  <button
-                    className="dropdown-menu-item"
-                    onClick={() => {
-                      setShowUserDropdown(false);
-                      onLogout();
-                    }}
-                  >
-                    <UserCheck size={14} color="#34d399" />
-                    <span>Ganti Akun Lain</span>
                   </button>
 
                   <button
@@ -170,8 +167,26 @@ export function Header({
               </>
             )}
           </div>
+        ) : (
+          <button
+            className="btn-primary"
+            onClick={onOpenLogin}
+            style={{
+              padding: '6px 14px',
+              fontSize: '0.74rem',
+              height: 34,
+              borderRadius: 9999,
+              letterSpacing: '0.04em'
+            }}
+            title="Masuk atau Daftar Akun"
+          >
+            <User size={15} />
+            <span>Masuk</span>
+          </button>
         )}
       </div>
     </header>
   );
 }
+
+export default Header;
