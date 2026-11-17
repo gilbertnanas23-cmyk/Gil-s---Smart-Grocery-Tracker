@@ -12,7 +12,8 @@ import {
   History,
   Lock,
   MapPin,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { BudgetSafetyGauge } from './components/BudgetSafetyGauge';
@@ -26,6 +27,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { LoginView } from './components/LoginView';
 import { ProfileModal } from './components/ProfileModal';
 import { BottomNav } from './components/BottomNav';
+import { BudgetExceededModal } from './components/BudgetExceededModal';
+import { ClearCartModal } from './components/ClearCartModal';
 import {
   INITIAL_CART_ITEMS,
   DEFAULT_MASTER_CATALOG,
@@ -80,6 +83,9 @@ export function App() {
   const [selectedStore, setSelectedStore] = useState(() => getLocalStore());
   const [selectedDate, setSelectedDate] = useState(() => getLocalDate());
   const mainDateInputRef = useRef(null);
+  const prevBudgetStatusRef = useRef(null);
+  const isBudgetInitialMountRef = useRef(true);
+  const isRemoteSyncingRef = useRef(false);
   const [catalog, setCatalog] = useState(() => getMasterCatalog());
   const [sessions, setSessions] = useState(() => getPastSessions());
   const [activeTab, setActiveTab] = useState('cart'); // 'cart' | 'promo' | 'history' | 'analytics'
@@ -103,6 +109,12 @@ export function App() {
   const [investigatingProduct, setInvestigatingProduct] = useState(null);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  // Task B1 & B4: Budget Protection & Clear Cart Modals
+  const [isBudgetExceededModalOpen, setIsBudgetExceededModalOpen] = useState(false);
+  const [pendingBudgetAction, setPendingBudgetAction] = useState(null); // { execute: Function, projectedTotal: number }
+  const [isClearCartModalOpen, setIsClearCartModalOpen] = useState(false);
+  const [isClearingCart, setIsClearingCart] = useState(false);
 
   // Supabase connection status
   const [supabaseStatus, setSupabaseStatus] = useState(() => {
@@ -140,12 +152,21 @@ export function App() {
         // Coba sinkronisasi data awal dari Supabase cloud
         syncUserDataFromCloud(user.uid).then((cloudData) => {
           if (cloudData) {
+            isRemoteSyncingRef.current = true;
             if (Array.isArray(cloudData.cart)) setCart(cloudData.cart);
             if (cloudData.budgetCap) setBudgetCap(Number(cloudData.budgetCap));
             if (cloudData.store) setSelectedStore(cloudData.store);
             if (cloudData.date) setSelectedDate(cloudData.date);
             if (Array.isArray(cloudData.catalog)) setCatalog(cloudData.catalog);
             if (Array.isArray(cloudData.history)) setSessions(cloudData.history);
+
+            const restoredCart = Array.isArray(cloudData.cart) ? cloudData.cart : cart;
+            const restoredCap = cloudData.budgetCap ? Number(cloudData.budgetCap) : budgetCap;
+            const restoredTotal = restoredCart.reduce((sum, item) => {
+              const disc = calculateTieredDiscount(item.unitPrice, item.discountString);
+              return sum + (disc.finalPrice * (Number(item.qty) || 1));
+            }, 0);
+            prevBudgetStatusRef.current = calculateBudgetStatus(restoredTotal, restoredCap).status;
           }
         });
       }
@@ -170,6 +191,7 @@ export function App() {
     const unsubscribeRealtime = subscribeToUserGroceryRealtime(currentUser.uid, (cloudData) => {
       if (!cloudData) return;
 
+      isRemoteSyncingRef.current = true;
       if (Array.isArray(cloudData.cart)) {
         setCart(cloudData.cart);
         localStorage.setItem('smart_grocery_cart_v1', JSON.stringify(cloudData.cart));
@@ -276,18 +298,16 @@ export function App() {
   const totalCart = enrichedCart.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
 
   // Real-time budget warning notification monitor (Task 3)
-  const prevBudgetStatusRef = useRef(null);
-  const isBudgetInitialMountRef = useRef(true);
-
   useEffect(() => {
     if (!budgetCap || budgetCap <= 0) return;
 
     const budgetInfo = calculateBudgetStatus(totalCart, budgetCap);
     const currentStatus = budgetInfo.status; // 'SAFE' | 'WARNING' | 'OVERBUDGET'
 
-    // Skip on initial mount / page load to avoid spurious toast on app startup
-    if (isBudgetInitialMountRef.current) {
+    // Skip on initial mount / page load or remote cloud sync to avoid spurious toast
+    if (isBudgetInitialMountRef.current || isRemoteSyncingRef.current) {
       isBudgetInitialMountRef.current = false;
+      isRemoteSyncingRef.current = false;
       prevBudgetStatusRef.current = currentStatus;
       return;
     }
@@ -322,8 +342,16 @@ export function App() {
     saveLocalCart(newCart);
   };
 
-  // Quantity Stepper (F-02)
-  const handleUpdateQty = (itemId, newQty) => {
+  // Helper to calculate total for any items array (Task B1)
+  const calculateCartTotal = (items) => {
+    return items.reduce((sum, item) => {
+      const disc = calculateTieredDiscount(item.unitPrice, item.discountString);
+      return sum + (disc.finalPrice * (Number(item.qty) || 1));
+    }, 0);
+  };
+
+  // Quantity Stepper (F-02 & Task B1)
+  const executeUpdateQty = (itemId, newQty) => {
     const safeQty = Math.max(1, newQty);
     const item = cart.find((i) => i.id === itemId);
     const updated = cart.map((i) => {
@@ -338,6 +366,30 @@ export function App() {
     }
   };
 
+  const handleUpdateQty = (itemId, newQty) => {
+    const currentItem = cart.find((i) => i.id === itemId);
+    const safeQty = Math.max(1, newQty);
+
+    // If decreasing or unchanged, no budget check needed
+    if (!currentItem || safeQty <= currentItem.qty) {
+      executeUpdateQty(itemId, newQty);
+      return;
+    }
+
+    const updated = cart.map((i) => (i.id === itemId ? { ...i, qty: safeQty } : i));
+    const projected = calculateCartTotal(updated);
+
+    if (budgetCap > 0 && projected > budgetCap && projected > totalCart) {
+      setPendingBudgetAction({
+        execute: () => executeUpdateQty(itemId, newQty),
+        projectedTotal: projected
+      });
+      setIsBudgetExceededModalOpen(true);
+    } else {
+      executeUpdateQty(itemId, newQty);
+    }
+  };
+
   // Delete item
   const handleDeleteItem = (itemId) => {
     const item = cart.find((i) => i.id === itemId);
@@ -348,15 +400,9 @@ export function App() {
     }
   };
 
-  // Add / Edit item
-  const handleSaveItem = (itemData) => {
-    const dataWithStoreAndDate = {
-      ...itemData,
-      store: itemData.store || selectedStore,
-      date: itemData.date || selectedDate
-    };
-
-    if (editingItem) {
+  // Add / Edit item (Task B1 Budget Protection)
+  const executeSaveItem = (dataWithStoreAndDate, isEditing) => {
+    if (isEditing) {
       const updated = cart.map((item) => (item.id === dataWithStoreAndDate.id ? dataWithStoreAndDate : item));
       updateCartAndSave(updated);
       setEditingItem(null);
@@ -364,7 +410,64 @@ export function App() {
     } else {
       const updated = [dataWithStoreAndDate, ...cart];
       updateCartAndSave(updated);
-      toast.success(`${itemData.name} berhasil ditambahkan ke troli.`);
+      toast.success(`${dataWithStoreAndDate.name} berhasil ditambahkan ke troli.`);
+    }
+  };
+
+  const handleSaveItem = (itemData) => {
+    const dataWithStoreAndDate = {
+      ...itemData,
+      store: itemData.store || selectedStore,
+      date: itemData.date || selectedDate
+    };
+
+    const isEditing = Boolean(editingItem);
+    const updatedCart = isEditing
+      ? cart.map((item) => (item.id === dataWithStoreAndDate.id ? dataWithStoreAndDate : item))
+      : [dataWithStoreAndDate, ...cart];
+
+    const projected = calculateCartTotal(updatedCart);
+
+    if (budgetCap > 0 && projected > budgetCap && projected > totalCart) {
+      setPendingBudgetAction({
+        execute: () => executeSaveItem(dataWithStoreAndDate, isEditing),
+        projectedTotal: projected
+      });
+      setIsBudgetExceededModalOpen(true);
+    } else {
+      executeSaveItem(dataWithStoreAndDate, isEditing);
+    }
+  };
+
+  // Task B1: Budget Exceeded Confirmation Handlers
+  const handleConfirmBudgetExceeded = () => {
+    if (pendingBudgetAction && typeof pendingBudgetAction.execute === 'function') {
+      pendingBudgetAction.execute();
+    }
+    setIsBudgetExceededModalOpen(false);
+    setPendingBudgetAction(null);
+  };
+
+  const handleCancelBudgetExceeded = () => {
+    setIsBudgetExceededModalOpen(false);
+    setPendingBudgetAction(null);
+  };
+
+  // Task B4: Clear All Cart Items Handler
+  const handleConfirmClearCart = async () => {
+    setIsClearingCart(true);
+    try {
+      updateCartAndSave([]);
+      if (currentUser && currentUser.uid) {
+        await triggerCloudSync();
+      }
+      toast.success('Semua barang berhasil dihapus dari troli.');
+    } catch (err) {
+      console.error('Error clearing cart:', err);
+      toast.error('Gagal mengosongkan troli belanja.');
+    } finally {
+      setIsClearingCart(false);
+      setIsClearCartModalOpen(false);
     }
   };
 
@@ -452,7 +555,13 @@ export function App() {
     setActiveTab(tabId);
   };
 
-  // Reload past session to cart
+  const executeReloadSession = (reloadedItems) => {
+    updateCartAndSave(reloadedItems);
+    setActiveTab('cart');
+    toast.success('Daftar belanja sebelumnya berhasil dimuat.');
+  };
+
+  // Reload past session to cart (Task B1 Budget Protection)
   const handleReloadSessionToCart = (session) => {
     if (!session || !session.items) return;
     const reloadedItems = session.items.map((item, idx) => ({
@@ -468,9 +577,18 @@ export function App() {
       date: item.date || selectedDate,
       checked: true
     }));
-    updateCartAndSave(reloadedItems);
-    setActiveTab('cart');
-    toast.success('Daftar belanja sebelumnya berhasil dimuat.');
+
+    const projected = calculateCartTotal(reloadedItems);
+
+    if (budgetCap > 0 && projected > budgetCap && projected > totalCart) {
+      setPendingBudgetAction({
+        execute: () => executeReloadSession(reloadedItems),
+        projectedTotal: projected
+      });
+      setIsBudgetExceededModalOpen(true);
+    } else {
+      executeReloadSession(reloadedItems);
+    }
   };
 
   // Reset to default sample
@@ -660,7 +778,18 @@ export function App() {
                     <span className="section-count-badge">{enrichedCart.length} item</span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    {cart.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn-clear-cart-text"
+                        onClick={() => setIsClearCartModalOpen(true)}
+                        title="Kosongkan seluruh barang dari troli belanja"
+                      >
+                        <Trash2 size={13} />
+                        <span>Hapus Semua</span>
+                      </button>
+                    )}
                     <button
                       className="icon-btn"
                       style={{ width: 30, height: 30 }}
@@ -923,6 +1052,23 @@ export function App() {
           onResetData={handleResetData}
           currentUser={currentUser}
           onLogout={handleLogout}
+        />
+
+        <BudgetExceededModal
+          isOpen={isBudgetExceededModalOpen}
+          onClose={handleCancelBudgetExceeded}
+          onConfirm={handleConfirmBudgetExceeded}
+          currentTotal={totalCart}
+          budgetCap={budgetCap}
+          projectedTotal={pendingBudgetAction?.projectedTotal || 0}
+        />
+
+        <ClearCartModal
+          isOpen={isClearCartModalOpen}
+          onClose={() => setIsClearCartModalOpen(false)}
+          onConfirm={handleConfirmClearCart}
+          itemCount={cart.length}
+          isProcessing={isClearingCart}
         />
       </main>
     </div>

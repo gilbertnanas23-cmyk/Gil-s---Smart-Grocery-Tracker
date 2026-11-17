@@ -213,14 +213,7 @@ export function GroceryItemCard({
 
       {/* Advice note jika harga naik tajam */}
       {priceComparison.direction === 'UP' && (
-        <div style={{
-          fontSize: '0.68rem',
-          color: '#f87171',
-          background: 'rgba(239, 68, 68, 0.08)',
-          padding: '4px 8px',
-          borderRadius: '6px',
-          marginTop: '6px'
-        }}>
+        <div className="price-advice-note danger">
           {priceComparison.advice}
         </div>
       )}

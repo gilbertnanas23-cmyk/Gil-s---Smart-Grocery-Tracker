@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { CATEGORIES, UNITS, DEFAULT_STORES } from '../data/defaultProducts';
+import { GENERIC_PRODUCTS, STANDARD_UNITS, getRecommendedUnits } from '../data/productUnits';
 import { formatRupiah } from '../utils/formatters';
 import { calculateTieredDiscount, compareHistoricalPrice } from '../utils/calculations';
 import { getLocalStore, getLocalDate, getTodayLocalDateString } from '../services/storage';
@@ -30,6 +31,8 @@ export function AddItemModal({
   const [name, setName] = useState('');
   const [category, setCategory] = useState('pokok');
   const [unit, setUnit] = useState('pcs');
+  const [isCustomUnit, setIsCustomUnit] = useState(false);
+  const [customUnitName, setCustomUnitName] = useState('');
   const [qty, setQty] = useState(1);
   const [unitPrice, setUnitPrice] = useState('');
   const [lastMonthPrice, setLastMonthPrice] = useState('');
@@ -39,7 +42,24 @@ export function AddItemModal({
   const [customStoreName, setCustomStoreName] = useState('');
   const [date, setDate] = useState(() => getLocalDate());
   const [validationError, setValidationError] = useState('');
+
+  // Searchable generic product combobox states
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const productComboboxRef = useRef(null);
   const modalDateInputRef = useRef(null);
+
+  // Close combobox when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (productComboboxRef.current && !productComboboxRef.current.contains(e.target)) {
+        setIsProductDropdownOpen(false);
+        setActiveSuggestionIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleOpenModalDatePicker = () => {
     if (modalDateInputRef.current) {
@@ -58,10 +78,27 @@ export function AddItemModal({
   // Prefill when editing or opening
   useEffect(() => {
     setValidationError('');
+    setIsProductDropdownOpen(false);
+    setActiveSuggestionIndex(-1);
+
     if (editItem) {
       setName(editItem.name || '');
       setCategory(editItem.category || 'pokok');
-      setUnit(editItem.unit || 'pcs');
+
+      const existingUnit = editItem.unit || 'pcs';
+      const recommended = getRecommendedUnits(editItem.name || '');
+      const allKnownUnits = [...new Set([...recommended, ...STANDARD_UNITS, ...UNITS])];
+      
+      if (allKnownUnits.includes(existingUnit)) {
+        setUnit(existingUnit);
+        setIsCustomUnit(false);
+        setCustomUnitName('');
+      } else {
+        setUnit('CUSTOM');
+        setIsCustomUnit(true);
+        setCustomUnitName(existingUnit);
+      }
+
       setQty(editItem.qty || 1);
       setUnitPrice(editItem.unitPrice ? String(editItem.unitPrice) : '');
       setLastMonthPrice(editItem.lastMonthPrice ? String(editItem.lastMonthPrice) : '');
@@ -84,6 +121,8 @@ export function AddItemModal({
       setName('');
       setCategory('pokok');
       setUnit('pcs');
+      setIsCustomUnit(false);
+      setCustomUnitName('');
       setQty(1);
       setUnitPrice('');
       setLastMonthPrice('');
@@ -108,24 +147,67 @@ export function AddItemModal({
 
   const activeStoreName = isCustomStore ? customStoreName.trim() : store;
 
-  // Filter catalog suggestions based on input & store preference
-  const catalogSuggestions = catalog.filter(c => {
-    if (!name.trim()) return false;
-    return c.name.toLowerCase().includes(name.toLowerCase().trim());
-  }).slice(0, 4);
+  // Filter ONLY generic products (without package sizes, quantities, or units)
+  const trimmedName = name.trim().toLowerCase();
+  const genericSuggestions = GENERIC_PRODUCTS.filter(p => {
+    if (!trimmedName) return true; // Show full list on focus
+    return p.name.toLowerCase().includes(trimmedName);
+  });
 
-  const handleSelectSuggestion = (suggested) => {
-    setName(suggested.name);
-    setCategory(suggested.category || 'pokok');
-    setUnit(suggested.unit || 'pcs');
-    setLastMonthPrice(suggested.lastMonthPrice ? String(suggested.lastMonthPrice) : '');
-    setUnitPrice(suggested.currentPrice ? String(suggested.currentPrice) : (suggested.lastMonthPrice ? String(suggested.lastMonthPrice) : ''));
-    if (suggested.discountString) {
-      setDiscountString(suggested.discountString);
+  const handleSelectGenericProduct = (product) => {
+    setName(product.name);
+    if (product.category) {
+      setCategory(product.category);
     }
-    if (suggested.store && DEFAULT_STORES.includes(suggested.store)) {
-      setStore(suggested.store);
-      setIsCustomStore(false);
+    const unitsForProduct = getRecommendedUnits(product.name);
+    // If current unit is already in the product's valid curated units, preserve it!
+    // Otherwise, select product defaultUnit or the first recommended unit
+    if (!unitsForProduct.includes(unit)) {
+      setUnit(product.defaultUnit || unitsForProduct[0] || 'pcs');
+      setIsCustomUnit(false);
+      setCustomUnitName('');
+    }
+    setIsProductDropdownOpen(false);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleProductNameKeyDown = (e) => {
+    if (!isProductDropdownOpen || genericSuggestions.length === 0) {
+      if (e.key === 'ArrowDown') {
+        setIsProductDropdownOpen(true);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestionIndex(prev => (prev < genericSuggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestionIndex(prev => (prev > 0 ? prev - 1 : genericSuggestions.length - 1));
+    } else if (e.key === 'Enter') {
+      if (activeSuggestionIndex >= 0 && activeSuggestionIndex < genericSuggestions.length) {
+        e.preventDefault();
+        handleSelectGenericProduct(genericSuggestions[activeSuggestionIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setIsProductDropdownOpen(false);
+      setActiveSuggestionIndex(-1);
+    }
+  };
+
+  // Recommended dynamic units based on current product name and current selection
+  const dynamicUnits = getRecommendedUnits(name, unit);
+
+  const handleUnitSelectChange = (e) => {
+    const val = e.target.value;
+    if (val === 'CUSTOM') {
+      setIsCustomUnit(true);
+      setUnit('CUSTOM');
+    } else {
+      setIsCustomUnit(false);
+      setUnit(val);
+      setCustomUnitName('');
     }
   };
 
@@ -186,12 +268,13 @@ export function AddItemModal({
     }
 
     const finalStoreToSave = isCustomStore ? customStoreName.trim() : store;
+    const finalUnitToSave = (unit === 'CUSTOM' || isCustomUnit) ? (customUnitName.trim() || 'pcs') : unit;
 
     const itemData = {
       id: editItem ? editItem.id : `cart-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       name: name.trim(),
       category,
-      unit,
+      unit: finalUnitToSave,
       qty: Math.max(1, Math.round(qtyNum)),
       unitPrice: priceNum,
       lastMonthPrice: numLastPrice,
@@ -317,40 +400,65 @@ export function AddItemModal({
             </div>
           )}
 
-          {/* Nama Produk with Suggestion Autocomplete */}
-          <div className="form-group">
+          {/* F-01 / Task B2: Nama Produk with Searchable Generic Combobox Dropdown */}
+          <div className="form-group" ref={productComboboxRef} style={{ position: 'relative' }}>
             <label className="form-label">
               <span>Nama Produk / Kebutuhan Pokok</span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Ketik nama barang</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Ketik atau pilih dari daftar</span>
             </label>
             <input
               type="text"
               className="form-input"
-              placeholder="Contoh: Beras Ramos Super 5kg, Minyak 2L, Telur..."
+              placeholder="Contoh: Beras, Minyak Goreng, Telur, Sabun..."
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                const newName = e.target.value;
+                setName(newName);
+                setIsProductDropdownOpen(true);
+                setActiveSuggestionIndex(-1);
+
+                // Auto-sync unit if current unit is not compatible with the newly typed product
+                if (!isCustomUnit) {
+                  const newUnits = getRecommendedUnits(newName);
+                  if (newUnits.length > 0 && !newUnits.includes(unit)) {
+                    setUnit(newUnits[0]);
+                  }
+                }
+              }}
+              onFocus={() => setIsProductDropdownOpen(true)}
+              onKeyDown={handleProductNameKeyDown}
+              autoComplete="off"
               required
             />
 
-            {/* Catalog quick matching pills */}
-            {catalogSuggestions.length > 0 && (
-              <div className="suggestion-pills-row">
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Saran cepat:</span>
-                {catalogSuggestions.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className="suggestion-pill"
-                    onClick={() => handleSelectSuggestion(s)}
-                  >
-                    {s.name} ({formatRupiah(s.lastMonthPrice)})
-                  </button>
-                ))}
+            {/* Combobox Dropdown Menu with Generic Products Only */}
+            {isProductDropdownOpen && genericSuggestions.length > 0 && (
+              <div className="product-combobox-dropdown">
+                <div className="combobox-dropdown-header">
+                  <Tag size={12} />
+                  <span>Katalog Kebutuhan Pokok Generik</span>
+                </div>
+                <div className="combobox-dropdown-list">
+                  {genericSuggestions.map((item, idx) => {
+                    const isSelected = idx === activeSuggestionIndex;
+                    return (
+                      <div
+                        key={item.name}
+                        className={`combobox-dropdown-item ${isSelected ? 'active' : ''}`}
+                        onClick={() => handleSelectGenericProduct(item)}
+                        onMouseEnter={() => setActiveSuggestionIndex(idx)}
+                      >
+                        <div className="combobox-item-name">{item.name}</div>
+                        <div className="combobox-item-badge">{item.defaultUnit}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Kategori & Satuan */}
+          {/* Kategori & Satuan (Task B3: Dynamic Product-Specific Units + Custom Unit) */}
           <div className="form-row-2col">
             <div className="form-group">
               <label className="form-label">Kategori</label>
@@ -369,15 +477,31 @@ export function AddItemModal({
               <label className="form-label">Satuan</label>
               <select
                 className="form-select"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
+                value={isCustomUnit ? 'CUSTOM' : unit}
+                onChange={handleUnitSelectChange}
               >
-                {UNITS.map(u => (
+                {dynamicUnits.map(u => (
                   <option key={u} value={u}>{u}</option>
                 ))}
+                <option value="CUSTOM">+ Custom / Tulis Sendiri...</option>
               </select>
             </div>
           </div>
+
+          {/* Inline Custom Unit input field when 'CUSTOM' selected */}
+          {isCustomUnit && (
+            <div className="form-group" style={{ marginTop: -4, marginBottom: 14 }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Ketik satuan sendiri (misal: ikat, karton, sisir)..."
+                value={customUnitName}
+                onChange={(e) => setCustomUnitName(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+          )}
 
           {/* Kuantitas (Qty) & Harga Satuan Saat Ini */}
           <div className="form-row-2col">
@@ -491,7 +615,7 @@ export function AddItemModal({
               </div>
 
               {comparison.direction === 'UP' && (
-                <div style={{ marginTop: 6, fontSize: '0.68rem', color: '#f87171' }}>
+                <div className="price-advice-note danger">
                   {comparison.advice}
                 </div>
               )}

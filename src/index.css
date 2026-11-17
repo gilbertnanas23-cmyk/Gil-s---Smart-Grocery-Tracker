@@ -835,6 +835,25 @@ body {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+.grocery-item-card:focus-visible,
+.grocery-item-card:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Light Mode: Shopping Card Hover Visibility & Contrast */
+[data-theme="light"] .grocery-item-card {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .grocery-item-card:hover {
+  background: #f8fafc;
+  border-color: rgba(5, 150, 105, 0.45);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
 .item-top-row {
   display: flex;
   align-items: flex-start;
@@ -913,6 +932,53 @@ body {
   background: rgba(148, 163, 184, 0.1);
   color: #cbd5e1;
   border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Light Mode Contrast Upgrades (WCAG AA Compliant) */
+[data-theme="light"] .price-fluctuation-badge.danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+[data-theme="light"] .price-fluctuation-badge.warning {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+[data-theme="light"] .price-fluctuation-badge.success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+[data-theme="light"] .price-fluctuation-badge.neutral {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Price Advice & Direction Notes */
+.price-advice-note {
+  font-size: 0.68rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.price-advice-note.danger {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+[data-theme="light"] .price-advice-note.danger {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
 }
 
 /* Tiered Discount Badge (F-03) */
@@ -2219,4 +2285,142 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 [data-theme="light"] .toast-notification.toast-info .toast-icon {
   color: #0284c7;
+}
+
+/* ==========================================================================
+   TASK B: Clear Cart Button & Product Name Combobox
+   ========================================================================== */
+
+/* Task B4: Clear All Cart Items Button */
+.btn-clear-cart-text {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.btn-clear-cart-text:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #dc2626;
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .btn-clear-cart-text {
+  background: rgba(254, 242, 242, 0.8);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #dc2626;
+}
+
+[data-theme="light"] .btn-clear-cart-text:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+
+/* Task B2: Product Combobox Dropdown */
+.product-combobox-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 120;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  max-height: 230px;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+.combobox-dropdown-header {
+  padding: 7px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(0, 0, 0, 0.18);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.combobox-dropdown-list {
+  overflow-y: auto;
+  flex: 1;
+  max-height: 190px;
+}
+
+.combobox-dropdown-item {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.combobox-dropdown-item:hover,
+.combobox-dropdown-item.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--primary-light);
+}
+
+.combobox-item-name {
+  font-weight: 600;
+}
+
+.combobox-item-badge {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  background: var(--bg-input);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+[data-theme="light"] .product-combobox-dropdown {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+}
+
+[data-theme="light"] .combobox-dropdown-header {
+  background: #f8fafc;
+  color: #64748b;
+  border-bottom-color: #e2e8f0;
+}
+
+[data-theme="light"] .combobox-dropdown-item {
+  color: #1e293b;
+}
+
+[data-theme="light"] .combobox-dropdown-item:hover,
+[data-theme="light"] .combobox-dropdown-item.active {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+[data-theme="light"] .combobox-item-badge {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
 }
