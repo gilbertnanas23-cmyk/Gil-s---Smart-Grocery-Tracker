@@ -59,7 +59,7 @@ import {
   signOutFromSupabase,
   subscribeToUserGroceryRealtime
 } from './services/supabase';
-import { calculateTieredDiscount } from './utils/calculations';
+import { calculateTieredDiscount, calculateBudgetStatus } from './utils/calculations';
 import { formatRupiah, formatDateLong } from './utils/formatters';
 import { useToast, ToastContainer } from './context/ToastContext';
 
@@ -222,6 +222,15 @@ export function App() {
         if (cloudData.date) setSelectedDate(cloudData.date);
         if (Array.isArray(cloudData.catalog)) setCatalog(cloudData.catalog);
         if (Array.isArray(cloudData.history)) setSessions(cloudData.history);
+
+        // Pre-seed prevBudgetStatusRef with restored cloud status to prevent false alerts
+        const restoredCart = Array.isArray(cloudData.cart) ? cloudData.cart : cart;
+        const restoredCap = cloudData.budgetCap ? Number(cloudData.budgetCap) : budgetCap;
+        const restoredTotal = restoredCart.reduce((sum, item) => {
+          const disc = calculateTieredDiscount(item.unitPrice, item.discountString);
+          return sum + (disc.finalPrice * (Number(item.qty) || 1));
+        }, 0);
+        prevBudgetStatusRef.current = calculateBudgetStatus(restoredTotal, restoredCap).status;
       }
     }
 
@@ -236,6 +245,7 @@ export function App() {
 
   // Handle user logout & clean account switch
   const handleLogout = async () => {
+    prevBudgetStatusRef.current = 'SAFE';
     triggerCloudSync();
     await signOutFromSupabase();
     clearUserDataForAccountSwitch();
@@ -264,6 +274,47 @@ export function App() {
   });
 
   const totalCart = enrichedCart.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
+
+  // Real-time budget warning notification monitor (Task 3)
+  const prevBudgetStatusRef = useRef(null);
+  const isBudgetInitialMountRef = useRef(true);
+
+  useEffect(() => {
+    if (!budgetCap || budgetCap <= 0) return;
+
+    const budgetInfo = calculateBudgetStatus(totalCart, budgetCap);
+    const currentStatus = budgetInfo.status; // 'SAFE' | 'WARNING' | 'OVERBUDGET'
+
+    // Skip on initial mount / page load to avoid spurious toast on app startup
+    if (isBudgetInitialMountRef.current) {
+      isBudgetInitialMountRef.current = false;
+      prevBudgetStatusRef.current = currentStatus;
+      return;
+    }
+
+    const prevStatus = prevBudgetStatusRef.current;
+
+    // Check meaningful transitions:
+    // 1. Normal (SAFE) -> Yellow (WARNING)
+    if (prevStatus === 'SAFE' && currentStatus === 'WARNING') {
+      toast.warning(
+        `Belanja sudah mencapai ${budgetInfo.percentage}% dari batas uang saku. Sisa ${formatRupiah(budgetInfo.remaining)}.`,
+        5000,
+        'Peringatan Budget'
+      );
+    }
+    // 2. Normal (SAFE) -> Red (OVERBUDGET) or Yellow (WARNING) -> Red (OVERBUDGET)
+    else if ((prevStatus === 'SAFE' || prevStatus === 'WARNING') && currentStatus === 'OVERBUDGET') {
+      const overAmount = Math.abs(budgetInfo.remaining);
+      toast.error(
+        `Total belanja melebihi anggaran sebesar ${formatRupiah(overAmount)}.`,
+        8000,
+        'Batas Budget Terlampaui!'
+      );
+    }
+
+    prevBudgetStatusRef.current = currentStatus;
+  }, [totalCart, budgetCap]);
 
   // Sync cart changes to storage
   const updateCartAndSave = (newCart) => {

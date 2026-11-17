@@ -12,17 +12,17 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showToast = useCallback((message, type = 'success', duration = 3000) => {
+  const showToast = useCallback((message, type = 'success', duration = 3000, title = null) => {
     if (!message) return;
 
     // Prevent immediate duplicate stacking
     const exists = toastsRef.current.some(
-      (t) => t.message === message && t.type === type
+      (t) => t.message === message && t.type === type && t.title === title
     );
     if (exists) return;
 
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const newToast = { id, message, type, duration };
+    const newToast = { id, message, type, duration, title };
 
     setToasts((prev) => {
       // Keep maximum 3 visible toasts
@@ -42,10 +42,10 @@ export function ToastProvider({ children }) {
     showToast,
     dismissToast,
     show: showToast,
-    success: (msg, dur = 3000) => showToast(msg, 'success', dur),
-    error: (msg, dur = 4500) => showToast(msg, 'error', dur),
-    warning: (msg, dur = 3500) => showToast(msg, 'warning', dur),
-    info: (msg, dur = 3000) => showToast(msg, 'info', dur),
+    success: (msg, dur = 3000, title = null) => showToast(msg, 'success', dur, title),
+    error: (msg, dur = 4500, title = null) => showToast(msg, 'error', dur, title),
+    warning: (msg, dur = 3500, title = null) => showToast(msg, 'warning', dur, title),
+    info: (msg, dur = 3000, title = null) => showToast(msg, 'info', dur, title),
     dismiss: dismissToast
   };
 
@@ -94,26 +94,29 @@ export function ToastContainer() {
 }
 
 function ToastItem({ toast, onDismiss }) {
-  const { type, message } = toast;
+  const { type, message, title } = toast;
 
   const renderIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle2 size={16} strokeWidth={2.4} />;
+        return <CheckCircle2 size={18} strokeWidth={2.4} />;
       case 'error':
-        return <AlertCircle size={16} strokeWidth={2.4} />;
+        return <AlertCircle size={18} strokeWidth={2.4} />;
       case 'warning':
-        return <AlertTriangle size={16} strokeWidth={2.4} />;
+        return <AlertTriangle size={18} strokeWidth={2.4} />;
       case 'info':
       default:
-        return <Info size={16} strokeWidth={2.4} />;
+        return <Info size={18} strokeWidth={2.4} />;
     }
   };
 
   return (
     <div className={`toast-notification toast-${type}`}>
       <span className="toast-icon">{renderIcon()}</span>
-      <span className="toast-message">{message}</span>
+      <div className="toast-content-col">
+        {title && <div className="toast-title">{title}</div>}
+        <div className="toast-message">{message}</div>
+      </div>
       <button
         type="button"
         className="toast-close-btn"
