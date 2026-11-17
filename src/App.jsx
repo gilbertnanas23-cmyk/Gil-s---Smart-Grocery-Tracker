@@ -369,6 +369,11 @@ export function App() {
       setIsAuthModalOpen(true);
       return;
     }
+    if (tabId === 'promo') {
+      setInvestigatingProduct(null);
+      setIsDiscountModalOpen(true);
+      return;
+    }
     setActiveTab(tabId);
   };
 
@@ -599,7 +604,7 @@ export function App() {
                       {userFirstName ? `Halo ${userFirstName}, Troli Masih Kosong` : 'Troli Masih Kosong'}
                     </div>
                     <div className="empty-state-desc">
-                      Kamu belum memasukkan belanjaan ke troli. Tekan tombol di bawah untuk menambah barang atau muat ulang daftar belanjaan bulan lalu!
+                      Belum ada barang di troli. Tambahkan barang baru atau muat ulang belanjaan bulan lalu.
                     </div>
                     <button
                       className="btn-primary"
@@ -627,71 +632,28 @@ export function App() {
                     ))}
                   </div>
                 )}
-
-                {/* Primary Action Buttons (Thumb-Friendly, Min Target 44px) */}
-                <div className="floating-action-container">
-                  <button
-                    className="btn-primary"
-                    onClick={() => {
-                      setEditingItem(null);
-                      setIsAddModalOpen(true);
-                    }}
-                    style={{ minHeight: '44px' }}
-                  >
-                    <Plus size={18} strokeWidth={2.6} />
-                    <span>+ Barang</span>
-                  </button>
-
-                  <button
-                    className="btn-checkout"
-                    onClick={handleAttemptCheckout}
-                    disabled={enrichedCart.length === 0}
-                    style={{
-                      minHeight: '44px',
-                      opacity: enrichedCart.length === 0 ? 0.5 : 1
-                    }}
-                  >
-                    <CheckCircle size={18} />
-                    <span>Ke Kasir</span>
-                  </button>
-                </div>
               </div>
             )}
 
             {/* TAB 2: INVESTIGATOR DISKON & UKURAN KEMASAN (F-03) */}
             {activeTab === 'promo' && (
-              <div>
-                <div style={{ marginBottom: 12 }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Sparkles size={18} color="#f59e0b" />
-                    <span>Investigator Promo Supermarket</span>
-                  </h2>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Kalkulator pembongkar promo cuci gudang bertingkat (50% + 20%) & perbandingan kemasan (1L vs 5L).
-                  </p>
-                </div>
-
-                <DiscountCalculatorModal
-                  isOpen={true}
-                  onClose={() => setActiveTab('cart')}
-                  initialProduct={investigatingProduct}
-                  onApplyToCart={(promoProduct) => {
-                    handleSaveItem({
-                      id: `cart-${Date.now()}`,
-                      name: promoProduct.name,
-                      category: promoProduct.category || 'kebersihan',
-                      unit: promoProduct.unit || 'botol',
-                      qty: 1,
-                      unitPrice: promoProduct.unitPrice,
-                      lastMonthPrice: null,
-                      discountString: promoProduct.discountString,
-                      store: selectedStore,
-                      date: selectedDate,
-                      checked: true
-                    });
-                    setActiveTab('cart');
-                  }}
-                />
+              <div style={{ textAlign: 'center', padding: '36px 14px' }}>
+                <Sparkles size={36} color="var(--primary)" style={{ marginBottom: 12 }} />
+                <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 6 }}>
+                  Investigator Promo & Diskon Pintar
+                </h2>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.45, maxWidth: 300, margin: '0 auto 18px' }}>
+                  Kalkulator pembongkar promo bertingkat (50% + 20%) & komparasi ukuran kemasan supermarket.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => setIsDiscountModalOpen(true)}
+                  style={{ margin: '0 auto', maxWidth: 240 }}
+                >
+                  <Sparkles size={16} />
+                  <span>Buka Modal Kalkulator</span>
+                </button>
               </div>
             )}
 
@@ -763,69 +725,128 @@ export function App() {
             )}
           </div>
 
+          {/* Floating Primary Action Buttons (Sticky above Bottom Nav on Cart) */}
+          {activeTab === 'cart' && (
+            <div className="floating-action-container">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  setEditingItem(null);
+                  setIsAddModalOpen(true);
+                }}
+                style={{ minHeight: '46px' }}
+              >
+                <Plus size={18} strokeWidth={2.6} />
+                <span>+ Barang</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn-checkout"
+                onClick={handleAttemptCheckout}
+                disabled={enrichedCart.length === 0}
+                style={{
+                  minHeight: '46px',
+                  opacity: enrichedCart.length === 0 ? 0.5 : 1
+                }}
+              >
+                <CheckCircle size={18} />
+                <span>Ke Kasir</span>
+              </button>
+            </div>
+          )}
+
           {/* Floating Native Bottom Navigation Bar */}
           <BottomNav
-            activeTab={activeTab}
+            activeTab={isDiscountModalOpen ? 'promo' : activeTab}
             onSelectTab={handleSelectTab}
             cartItemCount={enrichedCart.length}
           />
         </div>
-      </main>
 
-      {/* AUTHENTICATION MODAL */}
-      {isAuthModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsAuthModalOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 410 }}>
-            <LoginView
-              onLoginSuccess={handleLoginSuccess}
-              onClose={() => setIsAuthModalOpen(false)}
-              isModal={true}
-              initialMode={authModalMode}
-            />
+        {/* AUTHENTICATION MODAL */}
+        {isAuthModalOpen && (
+          <div className="modal-backdrop" onClick={() => setIsAuthModalOpen(false)}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 410, margin: 'auto' }}>
+              <LoginView
+                onLoginSuccess={handleLoginSuccess}
+                onClose={() => setIsAuthModalOpen(false)}
+                isModal={true}
+                initialMode={authModalMode}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* USER PROFILE MODAL */}
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-        onProfileUpdated={(updatedUser) => setCurrentUser(updatedUser)}
-      />
+        {/* USER PROFILE MODAL */}
+        <ProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onProfileUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+        />
 
-      {/* MODALS */}
-      <AddItemModal
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          setEditingItem(null);
-        }}
-        onSaveItem={handleSaveItem}
-        editItem={editingItem}
-        catalog={catalog}
-      />
+        {/* MODALS */}
+        <DiscountCalculatorModal
+          isOpen={isDiscountModalOpen}
+          onClose={() => {
+            setIsDiscountModalOpen(false);
+            setInvestigatingProduct(null);
+          }}
+          initialProduct={investigatingProduct}
+          onApplyToCart={(promoProduct) => {
+            handleSaveItem({
+              id: `cart-${Date.now()}`,
+              name: promoProduct.name,
+              category: promoProduct.category || 'kebersihan',
+              unit: promoProduct.unit || 'botol',
+              qty: 1,
+              unitPrice: promoProduct.unitPrice,
+              lastMonthPrice: null,
+              discountString: promoProduct.discountString,
+              store: selectedStore,
+              date: selectedDate,
+              checked: true
+            });
+            setIsDiscountModalOpen(false);
+            setInvestigatingProduct(null);
+            setActiveTab('cart');
+          }}
+        />
 
-      <CheckoutModal
-        isOpen={isCheckoutModalOpen}
-        onClose={() => setIsCheckoutModalOpen(false)}
-        cartItems={enrichedCart}
-        budgetCap={budgetCap}
-        onFinishShopping={handleFinishShopping}
-        currentStore={selectedStore}
-        currentDate={selectedDate}
-      />
+        <AddItemModal
+          isOpen={isAddModalOpen}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditingItem(null);
+          }}
+          onSaveItem={handleSaveItem}
+          editItem={editingItem}
+          catalog={catalog}
+        />
 
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        budgetCap={budgetCap}
-        onUpdateBudget={handleUpdateBudget}
-        onResetData={handleResetData}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-      />
+        <CheckoutModal
+          isOpen={isCheckoutModalOpen}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          cartItems={enrichedCart}
+          budgetCap={budgetCap}
+          onFinishShopping={handleFinishShopping}
+          currentStore={selectedStore}
+          currentDate={selectedDate}
+        />
+
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          budgetCap={budgetCap}
+          onUpdateBudget={handleUpdateBudget}
+          onResetData={handleResetData}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+        />
+      </main>
     </div>
   );
 }

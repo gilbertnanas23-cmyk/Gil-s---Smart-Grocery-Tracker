@@ -50,25 +50,27 @@ export function DiscountCalculatorModal({
         {/* Tab Switcher */}
         <div className="promo-tool-tab-switch">
           <button
+            type="button"
             className={`promo-tab-btn ${activeTab === 'discount' ? 'active' : ''}`}
             onClick={() => setActiveTab('discount')}
           >
-            <Percent size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: -2 }} />
-            Diskon Bertingkat vs Tunai
+            <Percent size={14} style={{ flexShrink: 0 }} />
+            <span>Diskon Bertingkat vs Tunai</span>
           </button>
           <button
+            type="button"
             className={`promo-tab-btn ${activeTab === 'pack_size' ? 'active' : ''}`}
             onClick={() => setActiveTab('pack_size')}
           >
-            <Scale size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: -2 }} />
-            Perbandingan Ukuran Kemasan
+            <Scale size={14} style={{ flexShrink: 0 }} />
+            <span>Perbandingan Ukuran Kemasan</span>
           </button>
         </div>
 
         {/* TAB 1: Diskon Bertingkat vs Diskon Tunai (Kasus Botol Sabun Pembersih Lantai) */}
         {activeTab === 'discount' && (
           <div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.4 }}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.45, textWrap: 'pretty' }}>
               Papan promo supermarket sering menjebak dengan klaim potongan bertumpuk ("50% + 20%").
               Masukkan angka di rak untuk membongkar harga aslinya detik ini juga:
             </div>
@@ -88,7 +90,7 @@ export function DiscountCalculatorModal({
               <div className="form-group">
                 <label className="form-label">
                   <span>Diskon Bertumpuk</span>
-                  <span style={{ fontSize: '0.68rem', color: '#f59e0b' }}>contoh: 50%+20%</span>
+                  <span className="form-label-hint">contoh: 50%+20%</span>
                 </label>
                 <input
                   type="text"
@@ -102,6 +104,7 @@ export function DiscountCalculatorModal({
               <div className="form-group">
                 <label className="form-label">
                   <span>Opsi Sebelah (Potongan Tunai)</span>
+                  <span className="form-label-hint" style={{ opacity: 0, userSelect: 'none' }}>&nbsp;</span>
                 </label>
                 <input
                   type="number"

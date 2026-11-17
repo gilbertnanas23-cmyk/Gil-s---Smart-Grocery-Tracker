@@ -37,7 +37,7 @@ export function BudgetSafetyGauge({
       <div className="gauge-header-row">
         <div className="gauge-title-box">
           <Wallet size={16} color="var(--primary-light)" />
-          <span>Pengendali Dompet (Safety Cap)</span>
+          <span>Pengendali Dompet</span>
         </div>
 
         <div className={`gauge-status-badge ${budgetInfo.status.toLowerCase()}`}>
