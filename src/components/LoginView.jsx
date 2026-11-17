@@ -212,8 +212,9 @@ export function LoginView({
               top: 14,
               right: 14,
               zIndex: 10,
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#94a3b8'
+              background: 'var(--bg-icon-btn)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-muted)'
             }}
             title="Tutup dan Lanjut Belanja"
           >
@@ -398,9 +399,9 @@ export function LoginView({
               gap: 10,
               width: '100%'
             }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
-              <span style={{ fontSize: '0.64rem', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em' }}>ATAU</span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
+              <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
+              <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.08em' }}>ATAU</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
             </div>
 
             <button
@@ -443,7 +444,7 @@ export function LoginView({
           <form onSubmit={handleForgotPasswordSubmit} className="login-form">
             <p style={{
               fontSize: '0.76rem',
-              color: '#94a3b8',
+              color: 'var(--text-muted)',
               textAlign: 'center',
               margin: '0 0 16px 0',
               lineHeight: 1.5
@@ -501,7 +502,7 @@ export function LoginView({
           <form onSubmit={handleResetPasswordSubmit} className="login-form">
             <p style={{
               fontSize: '0.76rem',
-              color: '#94a3b8',
+              color: 'var(--text-muted)',
               textAlign: 'center',
               margin: '0 0 16px 0',
               lineHeight: 1.5

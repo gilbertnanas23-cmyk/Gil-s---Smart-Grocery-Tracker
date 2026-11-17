@@ -248,24 +248,24 @@ alter publication supabase_realtime add table public.grocery_user_data;`;
         {/* 1. Status Akun Terautentikasi */}
         {currentUser && (
           <div style={{
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.7) 100%)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
+            background: 'linear-gradient(135deg, var(--success-bg) 0%, var(--bg-card) 100%)',
+            border: '1px solid var(--success-border)',
             borderRadius: '16px',
             padding: '14px',
             marginBottom: '14px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#34d399', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <UserCheck size={16} />
                 <span>Akun Supabase Aktif</span>
               </div>
               <span style={{
                 fontSize: '0.66rem',
-                background: 'rgba(16, 185, 129, 0.2)',
-                color: '#10b981',
+                background: 'var(--success-bg)',
+                color: 'var(--success)',
                 padding: '2px 8px',
                 borderRadius: '999px',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
+                border: '1px solid var(--success-border)',
                 fontWeight: 600
               }}>
                 Terautentikasi
@@ -357,14 +357,14 @@ alter publication supabase_realtime add table public.grocery_user_data;`;
 
         {/* 3. Integrasi Supabase Cloud (Database & Auth - UTAMA) */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(16, 185, 129, 0.35)',
+          background: 'var(--bg-input)',
+          border: '1px solid var(--border-subtle)',
           borderRadius: '16px',
           padding: '14px',
           marginBottom: '14px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Database size={16} />
               <span>Konfigurasi Supabase (Auth & PostgreSQL)</span>
             </div>

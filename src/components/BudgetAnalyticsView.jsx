@@ -41,11 +41,12 @@ export function BudgetAnalyticsView({
     <div style={{ paddingBottom: '24px' }}>
       {/* Top Health Card */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95))',
+        background: 'var(--bg-gauge)',
         border: '1px solid var(--border-subtle)',
         borderRadius: '18px',
         padding: '16px',
-        marginBottom: '14px'
+        marginBottom: '14px',
+        boxShadow: 'var(--shadow-sm)'
       }}>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
           Status Kesehatan Finansial Belanja
@@ -54,7 +55,7 @@ export function BudgetAnalyticsView({
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
             {budgetRatio}% Terpakai
           </div>
-          <div style={{ fontSize: '0.82rem', color: remainingBudget >= 0 ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+          <div style={{ fontSize: '0.82rem', color: remainingBudget >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>
             {remainingBudget >= 0 ? `Sisa: ${formatRupiah(remainingBudget)}` : `Minus: ${formatRupiah(Math.abs(remainingBudget))}`}
           </div>
         </div>
@@ -64,7 +65,7 @@ export function BudgetAnalyticsView({
             className="gauge-progress-fill"
             style={{
               width: `${Math.min(100, budgetRatio)}%`,
-              backgroundColor: budgetRatio > 100 ? '#ef4444' : (budgetRatio > 85 ? '#f59e0b' : '#10b981')
+              backgroundColor: budgetRatio > 100 ? 'var(--danger)' : (budgetRatio > 85 ? 'var(--warning)' : 'var(--success)')
             }}
           />
         </div>
@@ -79,33 +80,33 @@ export function BudgetAnalyticsView({
         marginBottom: '14px'
       }}>
         <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <TrendingUp size={16} color="#38bdf8" />
+          <TrendingUp size={16} color="var(--primary)" />
           <span>Radar Fluktuasi Harga vs Bulan Lalu</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '12px', padding: '10px 4px' }}>
-            <div style={{ color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontWeight: 800, fontSize: '1.1rem' }}>
+          <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', borderRadius: '12px', padding: '10px 4px' }}>
+            <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontWeight: 800, fontSize: '1.1rem' }}>
               <ArrowUpRight size={16} strokeWidth={3} />
               <span>{countUp}</span>
             </div>
-            <div style={{ fontSize: '0.68rem', color: '#fca5a5', marginTop: 2 }}>Harga Naik</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--danger)', marginTop: 2, fontWeight: 600 }}>Harga Naik</div>
           </div>
 
-          <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '12px', padding: '10px 4px' }}>
-            <div style={{ color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontWeight: 800, fontSize: '1.1rem' }}>
+          <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)', borderRadius: '12px', padding: '10px 4px' }}>
+            <div style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontWeight: 800, fontSize: '1.1rem' }}>
               <ArrowDownRight size={16} strokeWidth={3} />
               <span>{countDown}</span>
             </div>
-            <div style={{ fontSize: '0.68rem', color: '#a7f3d0', marginTop: 2 }}>Harga Turun</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--success)', marginTop: 2, fontWeight: 600 }}>Harga Turun</div>
           </div>
 
-          <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.25)', borderRadius: '12px', padding: '10px 4px' }}>
-            <div style={{ color: '#fde047', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontWeight: 800, fontSize: '1.1rem' }}>
+          <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: '12px', padding: '10px 4px' }}>
+            <div style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontWeight: 800, fontSize: '1.1rem' }}>
               <Equal size={16} strokeWidth={3} />
               <span>{countEqual}</span>
             </div>
-            <div style={{ fontSize: '0.68rem', color: '#fef08a', marginTop: 2 }}>Harga Stabil</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--warning)', marginTop: 2, fontWeight: 600 }}>Harga Stabil</div>
           </div>
         </div>
       </div>
@@ -133,7 +134,7 @@ export function BudgetAnalyticsView({
                   <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{cat.name}</span>
                   <span style={{ color: 'var(--text-muted)' }}>{formatRupiah(amount)} ({pct}%)</span>
                 </div>
-                <div style={{ width: '100%', height: 6, background: 'rgba(255, 255, 255, 0.06)', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: 6, background: 'var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',

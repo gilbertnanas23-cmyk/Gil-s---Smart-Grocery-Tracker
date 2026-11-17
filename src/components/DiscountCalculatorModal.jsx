@@ -122,8 +122,9 @@ export function DiscountCalculatorModal({
                 <span style={{
                   fontSize: '0.7rem',
                   fontWeight: 700,
-                  color: promoComparison.winner === 'tiered' ? '#10b981' : '#38bdf8',
-                  background: 'rgba(255, 255, 255, 0.08)',
+                  color: promoComparison.winner === 'tiered' ? 'var(--success)' : (promoComparison.winner === 'flat' ? '#0284c7' : 'var(--text-muted)'),
+                  background: promoComparison.winner === 'tiered' ? 'var(--success-bg)' : (promoComparison.winner === 'flat' ? 'rgba(56, 189, 248, 0.15)' : 'var(--border-subtle)'),
+                  border: '1px solid var(--border-subtle)',
                   padding: '2px 8px',
                   borderRadius: '20px'
                 }}>
@@ -136,7 +137,7 @@ export function DiscountCalculatorModal({
                 <div className={`comparison-option-box ${promoComparison.winner === 'tiered' ? 'is-winner' : ''}`}>
                   <div className="option-box-title">Promo {tieredPromo}</div>
                   <div className="option-box-price">{formatRupiah(promoComparison.tieredFinalPrice)}</div>
-                  <div style={{ fontSize: '0.68rem', color: '#10b981', marginTop: 4 }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--success)', marginTop: 4, fontWeight: 600 }}>
                     Diskon riil: {tieredSteps.effectiveDiscountPercent}% (Bukan {tieredPromo.replace(/[^0-9+]/g, '')}%)
                   </div>
                 </div>
@@ -145,7 +146,7 @@ export function DiscountCalculatorModal({
                 <div className={`comparison-option-box ${promoComparison.winner === 'flat' ? 'is-winner' : ''}`}>
                   <div className="option-box-title">Potongan Langsung {formatRupiah(flatDiscount)}</div>
                   <div className="option-box-price">{formatRupiah(promoComparison.flatFinalPrice)}</div>
-                  <div style={{ fontSize: '0.68rem', color: '#38bdf8', marginTop: 4 }}>
+                  <div style={{ fontSize: '0.68rem', color: '#0284c7', marginTop: 4, fontWeight: 600 }}>
                     Hemat: {formatRupiah(promoComparison.flatSavings)}
                   </div>
                 </div>
@@ -188,8 +189,8 @@ export function DiscountCalculatorModal({
               Kalkulator satuan ini menghitung harga per satuan baku (liter/kg/pcs) secara otomatis:
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '14px', padding: '12px', marginBottom: 10 }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: 8 }}>
+            <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: '14px', padding: '12px', marginBottom: 10 }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8 }}>
                 Opsi A (Kemasan Kecil / Eceran)
               </div>
               <div className="form-row-2col">
@@ -215,8 +216,8 @@ export function DiscountCalculatorModal({
               </div>
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '14px', padding: '12px', marginBottom: 12 }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', marginBottom: 8 }}>
+            <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: '14px', padding: '12px', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', marginBottom: 8 }}>
                 Opsi B (Kemasan Besar / Grosir)
               </div>
               <div className="form-row-2col">

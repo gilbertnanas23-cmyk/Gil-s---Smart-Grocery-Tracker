@@ -97,9 +97,9 @@ export function ProfileModal({
           alignItems: 'center',
           gap: 14,
           padding: 16,
-          background: 'rgba(30, 41, 59, 0.6)',
+          background: 'var(--bg-input)',
           borderRadius: 16,
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          border: '1px solid var(--border-subtle)',
           marginBottom: 16
         }}>
           {currentUser.photoURL ? (
@@ -203,8 +203,8 @@ export function ProfileModal({
               className="login-input-field"
               style={{
                 width: '100%',
-                background: 'rgba(15, 23, 42, 0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-subtle)',
                 borderRadius: 12,
                 padding: '10px 14px',
                 fontSize: '0.84rem'
@@ -231,12 +231,12 @@ export function ProfileModal({
               className="login-input-field"
               style={{
                 width: '100%',
-                background: 'rgba(15, 23, 42, 0.4)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
                 borderRadius: 12,
                 padding: '10px 14px',
                 fontSize: '0.84rem',
-                color: '#64748b',
+                color: 'var(--text-dim)',
                 cursor: 'not-allowed'
               }}
             />
@@ -245,8 +245,9 @@ export function ProfileModal({
           {/* User ID Supabase (read only reference) */}
           <div style={{
             fontSize: '0.68rem',
-            color: '#64748b',
-            background: 'rgba(0, 0, 0, 0.25)',
+            color: 'var(--text-dim)',
+            background: 'var(--bg-input)',
+            border: '1px solid var(--border-subtle)',
             padding: '8px 12px',
             borderRadius: 8,
             marginBottom: 16,
@@ -279,9 +280,9 @@ export function ProfileModal({
                 height: 42,
                 padding: '0 16px',
                 borderRadius: 9999,
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#f87171',
+                background: 'var(--danger-bg)',
+                border: '1px solid var(--danger-border)',
+                color: 'var(--danger)',
                 fontWeight: 700,
                 fontSize: '0.78rem',
                 display: 'flex',
