@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Plus,
@@ -37,6 +37,21 @@ export function AddItemModal({
   const [customStoreName, setCustomStoreName] = useState('');
   const [date, setDate] = useState(() => getLocalDate());
   const [validationError, setValidationError] = useState('');
+  const modalDateInputRef = useRef(null);
+
+  const handleOpenModalDatePicker = () => {
+    if (modalDateInputRef.current) {
+      if (typeof modalDateInputRef.current.showPicker === 'function') {
+        try {
+          modalDateInputRef.current.showPicker();
+        } catch {
+          modalDateInputRef.current.focus();
+        }
+      } else {
+        modalDateInputRef.current.focus();
+      }
+    }
+  };
 
   // Prefill when editing or opening
   useEffect(() => {
@@ -230,17 +245,51 @@ export function AddItemModal({
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">
+              <label
+                htmlFor="modal-input-date"
+                className="form-label"
+                style={{ cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleOpenModalDatePicker();
+                }}
+              >
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Calendar size={13} color="var(--primary-light)" />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleOpenModalDatePicker();
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      margin: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: 'var(--primary-light)',
+                      outline: 'none'
+                    }}
+                    aria-label="Pilih tanggal transaksi"
+                    title="Buka pemilih tanggal transaksi"
+                  >
+                    <Calendar size={13} color="var(--primary-light)" />
+                  </button>
                   <span>Tanggal Transaksi</span>
                 </span>
               </label>
               <input
+                ref={modalDateInputRef}
+                id="modal-input-date"
                 type="date"
                 className="form-input"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                onClick={handleOpenModalDatePicker}
                 required
               />
             </div>
@@ -428,7 +477,7 @@ export function AddItemModal({
 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Total Baris (Qty x Harga):</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
                     {formatRupiah(lineTotal)}
                   </div>
                 </div>

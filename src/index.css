@@ -4,7 +4,7 @@
    ========================================================================== */
 
 :root {
-  /* Color Palette */
+  /* Color Palette - Dark Mode (Default Baseline) */
   --bg-app: #080d1a;
   --bg-surface: #0f172a;
   --bg-card: rgba(30, 41, 59, 0.7);
@@ -59,6 +59,94 @@
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow-glow: 0 0 25px var(--primary-glow);
   --shadow-danger-pulse: 0 0 25px var(--danger-glow);
+
+  /* Theme-specific Component Tokens - Dark */
+  --bg-body: #040711;
+  --bg-desktop: radial-gradient(circle at 50% 15%, #0f1c3f 0%, #060a14 70%);
+  --bg-screen: linear-gradient(180deg, #090e1a 0%, #0b1325 100%);
+  --bg-bottom-nav: rgba(15, 23, 42, 0.88);
+  --bg-bottom-nav-border: rgba(255, 255, 255, 0.12);
+  --bg-gauge: linear-gradient(145deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+  --bg-stepper: rgba(15, 23, 42, 0.7);
+  --bg-stepper-btn: rgba(255, 255, 255, 0.08);
+  --bg-icon-btn: rgba(255, 255, 255, 0.05);
+  --bg-icon-btn-hover: rgba(255, 255, 255, 0.1);
+  --bg-btn-secondary: rgba(255, 255, 255, 0.08);
+  --bg-modal-panel: #0f172a;
+  --bg-modal-backdrop: rgba(3, 7, 18, 0.75);
+  --bg-login-card: rgba(30, 41, 59, 0.72);
+  --border-login-card: rgba(255, 255, 255, 0.09);
+  --phone-bezel-shadow: 0 0 0 10px #1e293b, 0 0 0 12px #334155, 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(16, 185, 129, 0.1);
+  --color-scheme: dark;
+}
+
+/* ==========================================================================
+   LIGHT MODE PALETTE & THEME TOKENS
+   ========================================================================== */
+[data-theme="light"] {
+  /* Color Palette - Light Mode */
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-input: #f1f5f9;
+
+  /* Primary Accent: Emerald Mint (Preserved with optimal light contrast) */
+  --primary: #059669;
+  --primary-light: #10b981;
+  --primary-dark: #047857;
+  --primary-glow: rgba(5, 150, 105, 0.18);
+
+  /* Status Colors */
+  --success: #059669;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.28);
+
+  --warning: #d97706;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.28);
+
+  --danger: #dc2626;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --danger-border: rgba(239, 68, 68, 0.28);
+  --danger-glow: rgba(239, 68, 68, 0.18);
+
+  /* Neutral Text & Borders */
+  --text-main: #0f172a;       /* Dark navy/slate for high readability */
+  --text-muted: #475569;      /* Medium slate */
+  --text-dim: #64748b;        /* Light slate */
+  --border-subtle: rgba(148, 163, 184, 0.25);
+  --border-active: rgba(5, 150, 105, 0.5);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(226, 232, 240, 0.9);
+  --glass-blur: blur(16px);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
+  --shadow-glow: 0 0 20px var(--primary-glow);
+  --shadow-danger-pulse: 0 0 20px var(--danger-glow);
+
+  /* Theme-specific Component Tokens - Light */
+  --bg-body: #e2e8f0;
+  --bg-desktop: radial-gradient(circle at 50% 15%, #f1f5f9 0%, #cbd5e1 75%);
+  --bg-screen: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  --bg-bottom-nav: rgba(255, 255, 255, 0.94);
+  --bg-bottom-nav-border: rgba(226, 232, 240, 0.95);
+  --bg-gauge: linear-gradient(145deg, #ffffff, #f8fafc);
+  --bg-stepper: #f1f5f9;
+  --bg-stepper-btn: #ffffff;
+  --bg-icon-btn: rgba(15, 23, 42, 0.05);
+  --bg-icon-btn-hover: rgba(15, 23, 42, 0.09);
+  --bg-btn-secondary: #f1f5f9;
+  --bg-modal-panel: #ffffff;
+  --bg-modal-backdrop: rgba(15, 23, 42, 0.45);
+  --bg-login-card: rgba(255, 255, 255, 0.96);
+  --border-login-card: rgba(226, 232, 240, 0.9);
+  --phone-bezel-shadow: 0 0 0 10px #cbd5e1, 0 0 0 12px #94a3b8, 0 20px 45px rgba(15, 23, 42, 0.15), 0 0 30px rgba(5, 150, 105, 0.08);
+  --color-scheme: light;
 }
 
 /* Reset & Box Sizing */
@@ -78,7 +166,7 @@ select {
 
 body {
   font-family: var(--font-sans);
-  background: #040711;
+  background: var(--bg-body, #040711);
   color: var(--text-main);
   line-height: 1.5;
   min-height: 100vh;
@@ -98,7 +186,7 @@ body {
   justify-content: center;
   align-items: center;
   position: relative;
-  background: radial-gradient(circle at 50% 15%, #0f1c3f 0%, #060a14 70%);
+  background: var(--bg-desktop, radial-gradient(circle at 50% 15%, #0f1c3f 0%, #060a14 70%));
   padding: 16px 0;
 }
 
@@ -133,16 +221,16 @@ body {
   max-height: 900px;
   background: var(--bg-surface);
   border-radius: 44px;
-  box-shadow: 
+  box-shadow: var(--phone-bezel-shadow, 
     0 0 0 10px #1e293b,
     0 0 0 12px #334155,
     0 25px 60px rgba(0, 0, 0, 0.8),
-    0 0 40px rgba(16, 185, 129, 0.1);
+    0 0 40px rgba(16, 185, 129, 0.1));
   position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-subtle);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -225,7 +313,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(180deg, #090e1a 0%, #0b1325 100%);
+  background: var(--bg-screen, linear-gradient(180deg, #090e1a 0%, #0b1325 100%));
 }
 
 /* Scrollable Content Body */
@@ -307,7 +395,7 @@ body {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-icon-btn, rgba(255, 255, 255, 0.05));
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   display: flex;
@@ -318,7 +406,7 @@ body {
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-icon-btn-hover, rgba(255, 255, 255, 0.1));
   color: var(--text-main);
 }
 
@@ -333,15 +421,15 @@ body {
   left: 14px;
   right: 14px;
   height: 68px;
-  background: rgba(15, 23, 42, 0.88);
+  background: var(--bg-bottom-nav, rgba(15, 23, 42, 0.88));
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--bg-bottom-nav-border, rgba(255, 255, 255, 0.12));
   border-radius: 28px;
   display: flex;
   align-items: center;
   justify-content: space-around;
   padding: 0 6px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-md, 0 12px 32px rgba(0, 0, 0, 0.6));
   z-index: 45;
 }
 
@@ -396,7 +484,7 @@ body {
    ========================================================================== */
 
 .budget-gauge-card {
-  background: linear-gradient(145deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+  background: var(--bg-gauge, linear-gradient(145deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95)));
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 16px;
@@ -732,7 +820,7 @@ body {
 .stepper-control {
   display: flex;
   align-items: center;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--bg-stepper, rgba(15, 23, 42, 0.7));
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
   padding: 3px;
@@ -743,7 +831,7 @@ body {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-stepper-btn, rgba(255, 255, 255, 0.08));
   border: none;
   color: var(--text-main);
   display: flex;
@@ -755,7 +843,7 @@ body {
 }
 
 .stepper-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--bg-icon-btn-hover, rgba(255, 255, 255, 0.15));
 }
 
 .stepper-btn:active {
@@ -829,7 +917,7 @@ body {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-btn-secondary, rgba(255, 255, 255, 0.08));
   color: var(--text-main);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -845,7 +933,7 @@ body {
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--bg-icon-btn-hover, rgba(255, 255, 255, 0.12));
 }
 
 .btn-secondary:active {
@@ -884,7 +972,7 @@ body {
 .modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(3, 7, 18, 0.75);
+  background: var(--bg-modal-backdrop, rgba(3, 7, 18, 0.75));
   backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
@@ -899,13 +987,13 @@ body {
 }
 
 .modal-sheet-panel {
-  background: #0f172a;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-modal-panel, #0f172a);
+  border-top: 1px solid var(--border-subtle);
   border-radius: 28px 28px 0 0;
   padding: 20px 18px 24px 18px;
   max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35);
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -917,7 +1005,7 @@ body {
 .modal-drag-handle {
   width: 40px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--border-subtle, rgba(255, 255, 255, 0.2));
   border-radius: 2px;
   margin: 0 auto 16px auto;
 }
@@ -972,6 +1060,16 @@ body {
 .form-input:focus, .form-select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Date Input Native Picker & Duplicate Icon Fix */
+input[type="date"], select, option {
+  color-scheme: var(--color-scheme, dark);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none;
 }
 
 .form-row-2col {
@@ -1227,15 +1325,15 @@ body {
 .login-glass-card {
   width: 100%;
   max-width: 350px;
-  background: rgba(30, 41, 59, 0.72);
+  background: var(--bg-login-card, rgba(30, 41, 59, 0.72));
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--border-login-card, rgba(255, 255, 255, 0.09));
   border-radius: 36px;
   padding: 38px 24px 34px 24px;
-  box-shadow: 
+  box-shadow: var(--shadow-md, 
     0 24px 60px rgba(0, 0, 0, 0.55),
     0 0 35px rgba(16, 185, 129, 0.1),
-    inset 0 1px 1px rgba(255, 255, 255, 0.12);
+    inset 0 1px 1px rgba(255, 255, 255, 0.12));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1622,11 +1720,11 @@ body {
   top: calc(100% + 8px);
   right: 0;
   width: 220px;
-  background: rgba(15, 23, 42, 0.95);
+  background: var(--bg-surface, rgba(15, 23, 42, 0.95));
   backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-md, 0 12px 30px rgba(0, 0, 0, 0.5));
   padding: 10px;
   z-index: 999;
   animation: fadeIn 0.15s ease-out;
@@ -1639,7 +1737,7 @@ body {
 .dropdown-user-name {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

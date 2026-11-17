@@ -51,7 +51,7 @@ export function BudgetAnalyticsView({
           Status Kesehatan Finansial Belanja
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
             {budgetRatio}% Terpakai
           </div>
           <div style={{ fontSize: '0.82rem', color: remainingBudget >= 0 ? '#10b981' : '#ef4444', fontWeight: 700 }}>
@@ -130,7 +130,7 @@ export function BudgetAnalyticsView({
             return (
               <div key={cat.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', marginBottom: 4 }}>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{cat.name}</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{cat.name}</span>
                   <span style={{ color: 'var(--text-muted)' }}>{formatRupiah(amount)} ({pct}%)</span>
                 </div>
                 <div style={{ width: '100%', height: 6, background: 'rgba(255, 255, 255, 0.06)', borderRadius: 10, overflow: 'hidden' }}>

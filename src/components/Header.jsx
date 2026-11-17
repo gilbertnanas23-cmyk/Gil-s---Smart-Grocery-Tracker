@@ -8,6 +8,8 @@ import {
   Monitor,
   Settings,
   Sparkles,
+  Sun,
+  Moon,
   LogOut,
   User,
   ShieldCheck,
@@ -23,7 +25,9 @@ export function Header({
   isFullScreen,
   onToggleFullScreen,
   onOpenSettings,
-  onOpenDiscountCalc
+  onOpenDiscountCalc,
+  theme = 'dark',
+  onToggleTheme
 }) {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
@@ -61,14 +65,15 @@ export function Header({
       </div>
 
       <div className="header-actions">
-        {/* Quick Promo Investigator Shortcut */}
+        {/* Light / Dark Mode Toggle */}
         <button
-          className="icon-btn"
-          onClick={onOpenDiscountCalc}
-          title="Kalkulator Promo & Diskon Bertingkat"
-          style={{ color: '#f59e0b' }}
+          className="icon-btn theme-toggle-btn"
+          onClick={onToggleTheme}
+          title={theme === 'dark' ? 'Beralih ke Mode Terang (Light Mode)' : 'Beralih ke Mode Gelap (Dark Mode)'}
+          aria-label={theme === 'dark' ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+          style={{ color: theme === 'dark' ? '#f59e0b' : '#6366f1' }}
         >
-          <Sparkles size={18} />
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
         {/* Desktop Device Frame Toggle */}

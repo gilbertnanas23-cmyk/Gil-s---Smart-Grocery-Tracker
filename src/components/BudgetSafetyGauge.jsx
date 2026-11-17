@@ -89,7 +89,7 @@ export function BudgetSafetyGauge({
                   width: '100px',
                   background: 'var(--bg-input)',
                   border: '1px solid var(--primary)',
-                  color: '#fff',
+                  color: 'var(--text-main)',
                   borderRadius: '6px',
                   padding: '3px 6px',
                   fontSize: '0.85rem'
@@ -173,7 +173,7 @@ export function BudgetSafetyGauge({
                 </button>
 
                 {showReliefSuggestions && reliefCandidates.length > 0 && (
-                  <div style={{ marginTop: 8, background: 'rgba(0, 0, 0, 0.3)', borderRadius: '8px', padding: '8px' }}>
+                  <div style={{ marginTop: 8, background: 'var(--bg-input)', borderRadius: '8px', padding: '8px' }}>
                     <div style={{ fontSize: '0.7rem', color: '#fca5a5', marginBottom: 6 }}>
                       Pilih barang berikut untuk dibatalkan agar total pas di dompet (kurang Rp {overAmount.toLocaleString('id-ID')}):
                     </div>
@@ -185,13 +185,13 @@ export function BudgetSafetyGauge({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            background: 'rgba(255, 255, 255, 0.05)',
+                            background: 'var(--bg-card)',
                             padding: '4px 8px',
                             borderRadius: '6px',
                             fontSize: '0.72rem'
                           }}
                         >
-                          <span style={{ color: '#fff' }}>{candidate.name} ({candidate.qty}x)</span>
+                          <span style={{ color: 'var(--text-main)' }}>{candidate.name} ({candidate.qty}x)</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{ color: '#f87171', fontWeight: 600 }}>
                               -{formatRupiah(candidate.lineTotal)}

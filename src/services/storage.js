@@ -20,7 +20,8 @@ const KEYS = {
   DATE: 'smart_grocery_date_v1',
   CATALOG: 'smart_grocery_catalog_v1',
   HISTORY: 'smart_grocery_history_v1',
-  SETTINGS: 'smart_grocery_settings_v1'
+  SETTINGS: 'smart_grocery_settings_v1',
+  THEME: 'smart_grocery_theme_v1'
 };
 
 /**
@@ -338,4 +339,26 @@ export function clearUserDataForAccountSwitch() {
   localStorage.removeItem(KEYS.DATE);
   localStorage.removeItem(KEYS.CATALOG);
   localStorage.removeItem(KEYS.HISTORY);
+}
+
+/**
+ * Tema Aplikasi (Light / Dark Mode)
+ */
+export function getLocalTheme() {
+  try {
+    const saved = localStorage.getItem(KEYS.THEME);
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch (e) {}
+  return 'dark'; // Dark Mode default
+}
+
+export function saveLocalTheme(theme) {
+  const valid = theme === 'light' ? 'light' : 'dark';
+  try {
+    localStorage.setItem(KEYS.THEME, valid);
+  } catch (e) {}
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-theme', valid);
+  }
+  return valid;
 }

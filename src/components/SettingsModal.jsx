@@ -298,7 +298,7 @@ alter publication supabase_realtime add table public.grocery_user_data;`;
               )}
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {currentUser.displayName || 'Pengguna'}
                 </div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -327,13 +327,13 @@ alter publication supabase_realtime add table public.grocery_user_data;`;
 
         {/* 2. Pengaturan Uang Saku Bulanan */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
+          background: 'var(--bg-input)',
           border: '1px solid var(--border-subtle)',
           borderRadius: '16px',
           padding: '14px',
           marginBottom: '14px'
         }}>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', marginBottom: 8 }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8 }}>
             Uang Saku Belanja Bulanan (Budget Safety Cap)
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -468,9 +468,9 @@ alter publication supabase_realtime add table public.grocery_user_data;`;
                 type="button"
                 onClick={handleCopySql}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  color: '#fff',
+                  background: 'var(--bg-btn-secondary)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-main)',
                   fontSize: '0.68rem',
                   cursor: 'pointer',
                   display: 'flex',

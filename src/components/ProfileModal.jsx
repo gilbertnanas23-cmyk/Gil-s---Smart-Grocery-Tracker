@@ -138,7 +138,7 @@ export function ProfileModal({
             <div style={{
               fontSize: '1.02rem',
               fontWeight: 800,
-              color: '#ffffff',
+              color: 'var(--text-main)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis'

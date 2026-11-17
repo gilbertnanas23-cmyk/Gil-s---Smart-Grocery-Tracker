@@ -123,7 +123,7 @@ export function CheckoutModal({
           display: 'flex',
           gap: '10px',
           flexWrap: 'wrap',
-          background: 'rgba(255, 255, 255, 0.04)',
+          background: 'var(--bg-input)',
           padding: '8px 12px',
           borderRadius: '10px',
           marginBottom: '12px',
@@ -132,11 +132,11 @@ export function CheckoutModal({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <MapPin size={13} color="var(--primary)" />
-            <span style={{ color: '#fff', fontWeight: 600 }}>{currentStore}</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{currentStore}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <Calendar size={13} color="#38bdf8" />
-            <span style={{ color: '#fff' }}>{currentDate}</span>
+            <span style={{ color: 'var(--text-main)' }}>{currentDate}</span>
           </div>
         </div>
 
@@ -153,7 +153,7 @@ export function CheckoutModal({
 
         {/* Rincian Ringkas Struk Belanja */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
+          background: 'var(--bg-input)',
           border: '1px solid var(--border-subtle)',
           borderRadius: '14px',
           padding: '12px',
@@ -177,10 +177,10 @@ export function CheckoutModal({
                 }}
               >
                 <div>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{item.name}</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{item.name}</span>
                   <span style={{ color: 'var(--text-dim)', marginLeft: 6 }}>x{item.qty}</span>
                 </div>
-                <div style={{ fontWeight: 700, color: '#f8fafc' }}>
+                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
                   {formatRupiah(item.lineTotal)}
                 </div>
               </div>
@@ -199,7 +199,7 @@ export function CheckoutModal({
                 <span>-{formatRupiah(totalSavings)}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800, color: '#fff', marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', marginTop: 4 }}>
               <span>TOTAL TAGIHAN:</span>
               <span style={{ color: '#38bdf8' }}>{formatRupiah(totalCart)}</span>
             </div>

@@ -203,7 +203,7 @@ export function HistoryView({
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 fontSize: '0.74rem',
-                                color: '#e2e8f0',
+                                color: 'var(--text-main)',
                                 padding: '2px 0'
                               }}
                             >
@@ -273,7 +273,7 @@ export function HistoryView({
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       {prod.name}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
@@ -287,7 +287,7 @@ export function HistoryView({
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#f8fafc' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)' }}>
                       {formatRupiah(curr)}
                     </div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>

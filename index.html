@@ -21,6 +21,18 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <title>Smart Grocery & Price Tracker - Personal Budget Guard</title>
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('smart_grocery_theme_v1');
+          if (t === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

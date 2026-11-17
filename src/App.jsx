@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus,
   ShoppingCart,
@@ -48,7 +48,9 @@ import {
   checkoutSession,
   triggerCloudSync,
   syncUserDataFromCloud,
-  clearUserDataForAccountSwitch
+  clearUserDataForAccountSwitch,
+  getLocalTheme,
+  saveLocalTheme
 } from './services/storage';
 import {
   getSupabaseInstance,
@@ -74,10 +76,22 @@ export function App() {
   const [budgetCap, setBudgetCap] = useState(() => getLocalBudget());
   const [selectedStore, setSelectedStore] = useState(() => getLocalStore());
   const [selectedDate, setSelectedDate] = useState(() => getLocalDate());
+  const mainDateInputRef = useRef(null);
   const [catalog, setCatalog] = useState(() => getMasterCatalog());
   const [sessions, setSessions] = useState(() => getPastSessions());
   const [activeTab, setActiveTab] = useState('cart'); // 'cart' | 'promo' | 'history' | 'analytics'
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [theme, setTheme] = useState(() => getLocalTheme());
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    saveLocalTheme(next);
+  };
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -305,6 +319,20 @@ export function App() {
     saveLocalDate(newDate);
   };
 
+  const handleOpenMainDatePicker = () => {
+    if (mainDateInputRef.current) {
+      if (typeof mainDateInputRef.current.showPicker === 'function') {
+        try {
+          mainDateInputRef.current.showPicker();
+        } catch {
+          mainDateInputRef.current.focus();
+        }
+      } else {
+        mainDateInputRef.current.focus();
+      }
+    }
+  };
+
   // Checkout complete
   const handleFinishShopping = ({ title, budgetCap, totalSpent, totalSaved, cartItems }) => {
     const newSession = checkoutSession({
@@ -441,6 +469,8 @@ export function App() {
             setInvestigatingProduct(null);
             setIsDiscountModalOpen(true);
           }}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
 
         {/* Scrollable Screen Content */}
@@ -455,7 +485,7 @@ export function App() {
                   alignItems: 'center',
                   gap: 8,
                   marginBottom: 10,
-                  background: 'rgba(15, 23, 42, 0.65)',
+                  background: 'var(--bg-card)',
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 14,
                   padding: '8px 12px'
@@ -469,7 +499,7 @@ export function App() {
                         width: '100%',
                         background: 'none',
                         border: 'none',
-                        color: '#f8fafc',
+                        color: 'var(--text-main)',
                         fontSize: '0.76rem',
                         fontWeight: 700,
                         cursor: 'pointer',
@@ -479,21 +509,42 @@ export function App() {
                       title="Ubah Toko / Lokasi Belanja Aktif"
                     >
                       {DEFAULT_STORES.map((s) => (
-                        <option key={s} value={s} style={{ background: '#0f172a', color: '#fff' }}>
+                        <option key={s} value={s} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
                           {s}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  <div style={{ width: 1, height: 16, background: 'rgba(255, 255, 255, 0.15)' }} />
+                  <div style={{ width: 1, height: 16, background: 'var(--border-subtle)' }} />
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                    <Calendar size={13} color="var(--primary-light)" />
+                    <button
+                      type="button"
+                      onClick={handleOpenMainDatePicker}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        margin: 0,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        color: 'var(--primary-light)',
+                        outline: 'none'
+                      }}
+                      aria-label="Pilih tanggal transaksi"
+                      title="Buka pemilih tanggal transaksi"
+                    >
+                      <Calendar size={13} color="var(--primary-light)" />
+                    </button>
                     <input
+                      ref={mainDateInputRef}
                       type="date"
                       value={selectedDate}
                       onChange={(e) => handleDateChange(e.target.value)}
+                      onClick={handleOpenMainDatePicker}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -611,7 +662,7 @@ export function App() {
             {activeTab === 'promo' && (
               <div>
                 <div style={{ marginBottom: 12 }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Sparkles size={18} color="#f59e0b" />
                     <span>Investigator Promo Supermarket</span>
                   </h2>
@@ -648,7 +699,7 @@ export function App() {
             {activeTab === 'history' && (
               <div>
                 <div style={{ marginBottom: 12 }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                     Riwayat Belanja & Struk Digital
                   </h2>
                   <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
@@ -695,7 +746,7 @@ export function App() {
             {activeTab === 'analytics' && (
               <div>
                 <div style={{ marginBottom: 12 }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                     Analisis Alokasi Belanja Pribadi
                   </h2>
                   <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
