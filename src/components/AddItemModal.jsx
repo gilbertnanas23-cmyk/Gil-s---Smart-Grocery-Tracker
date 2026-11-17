@@ -17,6 +17,7 @@ import { CATEGORIES, UNITS, DEFAULT_STORES } from '../data/defaultProducts';
 import { formatRupiah } from '../utils/formatters';
 import { calculateTieredDiscount, compareHistoricalPrice } from '../utils/calculations';
 import { getLocalStore, getLocalDate, getTodayLocalDateString } from '../services/storage';
+import { useToast } from '../context/ToastContext';
 
 export function AddItemModal({
   isOpen,
@@ -25,6 +26,7 @@ export function AddItemModal({
   editItem = null,
   catalog = []
 }) {
+  const toast = useToast();
   const [name, setName] = useState('');
   const [category, setCategory] = useState('pokok');
   const [unit, setUnit] = useState('pcs');
@@ -153,28 +155,33 @@ export function AddItemModal({
     // Validasi Aktif Bahasa Indonesia (F-01)
     if (!name.trim()) {
       setValidationError('Silakan masukkan nama produk belanja Anda.');
+      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     if (isCustomStore && !customStoreName.trim()) {
       setValidationError('Silakan ketik nama toko atau pilih salah satu toko dari daftar.');
+      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     const priceNum = Number(unitPrice);
     if (unitPrice === '' || isNaN(priceNum) || priceNum < 0) {
       setValidationError('Harga satuan wajib diisi angka valid dan tidak boleh bernilai negatif.');
+      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     const qtyNum = Number(qty);
     if (isNaN(qtyNum) || qtyNum <= 0) {
       setValidationError('Kuantitas (Qty) barang minimal 1.');
+      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     if (!date) {
       setValidationError('Tanggal transaksi belanja wajib dipilih.');
+      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
@@ -407,7 +414,7 @@ export function AddItemModal({
           </div>
 
           {/* Harga Bulan Lalu & Diskon Bertingkat */}
-          <div className="form-row-2col">
+          <div className="form-row-2col" style={{ marginBottom: 16 }}>
             <div className="form-group">
               <label className="form-label">
                 <span>Harga Bulan Lalu ({activeStoreName})</span>
@@ -428,12 +435,12 @@ export function AddItemModal({
             <div className="form-group">
               <label className="form-label">
                 <span>Promo / Diskon</span>
-                <span style={{ fontSize: '0.68rem', color: '#f59e0b' }}>contoh: 50%+20%</span>
+                <span className="form-label-hint">contoh: 50%+20%</span>
               </label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="Misal: 50% + 20% atau 20%"
+                placeholder="Contoh: 20%"
                 value={discountString}
                 onChange={(e) => setDiscountString(e.target.value)}
               />
@@ -447,7 +454,7 @@ export function AddItemModal({
               border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--radius-md)',
               padding: '12px',
-              marginBottom: '16px'
+              marginBottom: '18px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -491,11 +498,13 @@ export function AddItemModal({
             </div>
           )}
 
-          {/* Submit Action */}
-          <button type="submit" className="btn-primary" style={{ width: '100%', height: 46 }}>
-            <Check size={18} />
-            <span>{editItem ? 'Simpan Perubahan' : 'Masukkan ke Troli Belanja'}</span>
-          </button>
+          {/* Submit Action with increased vertical spacing */}
+          <div style={{ marginTop: '22px', paddingBottom: '12px' }}>
+            <button type="submit" className="btn-primary" style={{ width: '100%', minHeight: 46 }}>
+              <Check size={18} />
+              <span>{editItem ? 'Simpan Perubahan' : 'Masukkan ke Troli Belanja'}</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>

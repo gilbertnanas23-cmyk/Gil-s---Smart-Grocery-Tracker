@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { formatRupiah, formatDate } from '../utils/formatters';
 import { exportAllData, importAllData } from '../services/storage';
+import { useToast } from '../context/ToastContext';
 
 export function HistoryView({
   sessions = [],
@@ -23,6 +24,7 @@ export function HistoryView({
   onReloadSessionToCart,
   onRefreshData
 }) {
+  const toast = useToast();
   const [activeSubTab, setActiveSubTab] = useState('sessions'); // 'sessions' | 'database'
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedSessionId, setExpandedSessionId] = useState(null);
@@ -48,8 +50,7 @@ export function HistoryView({
     a.download = `smart_grocery_backup_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    setExportNotice('File backup JSON berhasil diunduh!');
-    setTimeout(() => setExportNotice(''), 3000);
+    toast.success('File backup JSON berhasil diunduh!');
   };
 
   const handleImport = (e) => {
@@ -62,10 +63,9 @@ export function HistoryView({
         const parsed = JSON.parse(event.target?.result);
         importAllData(parsed);
         if (onRefreshData) onRefreshData();
-        setExportNotice('Data belanja berhasil dipulihkan!');
-        setTimeout(() => setExportNotice(''), 3000);
+        toast.success('Data belanja berhasil dipulihkan!');
       } catch (err) {
-        alert('Format file JSON tidak sesuai.');
+        toast.error('Format file JSON tidak sesuai.');
       }
     };
     reader.readAsText(file);

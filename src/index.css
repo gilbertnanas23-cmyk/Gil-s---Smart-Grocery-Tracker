@@ -579,16 +579,29 @@ body {
 }
 
 .gauge-status-badge.warning {
-  background: var(--warning-bg);
-  color: var(--warning);
-  border: 1px solid var(--warning-border);
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+[data-theme="light"] .gauge-status-badge.warning {
+  background: #fef3c7;
+  color: #78350f; /* Dark amber/brown for WCAG AAA contrast */
+  border: 1px solid #fcd34d;
 }
 
 .gauge-status-badge.critical,
 .gauge-status-badge.overbudget {
-  background: var(--danger-bg);
-  color: var(--danger);
-  border: 1px solid var(--danger-border);
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="light"] .gauge-status-badge.critical,
+[data-theme="light"] .gauge-status-badge.overbudget {
+  background: #fee2e2;
+  color: #7f1d1d; /* Dark red for WCAG AAA contrast */
+  border: 1px solid #fca5a5;
 }
 
 .gauge-amounts-row {
@@ -663,21 +676,110 @@ body {
 }
 
 .safety-alert-banner.overbudget {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fecaca;
+}
+
+[data-theme="light"] .safety-alert-banner.overbudget {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #7f1d1d; /* Dark red for WCAG AAA contrast */
+}
+
+[data-theme="light"] .safety-alert-banner.overbudget svg {
+  color: #7f1d1d;
 }
 
 .safety-alert-banner.critical {
-  background: rgba(249, 115, 22, 0.15);
-  border: 1px solid rgba(249, 115, 22, 0.3);
-  color: #fdba74;
+  background: rgba(249, 115, 22, 0.18);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  color: #fed7aa;
+}
+
+[data-theme="light"] .safety-alert-banner.critical {
+  background: #ffedd5;
+  border: 1px solid #fdba74;
+  color: #7c2d12; /* Dark amber/brown for WCAG AAA */
+}
+
+[data-theme="light"] .safety-alert-banner.critical svg {
+  color: #7c2d12;
 }
 
 .safety-alert-banner.warning {
-  background: rgba(234, 179, 8, 0.12);
-  border: 1px solid rgba(234, 179, 8, 0.3);
-  color: #fde047;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #fef08a;
+}
+
+[data-theme="light"] .safety-alert-banner.warning {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #78350f; /* Dark amber/brown for WCAG AAA */
+}
+
+[data-theme="light"] .safety-alert-banner.warning svg {
+  color: #78350f;
+}
+
+/* Penyelamat Kasir Relief Action & Items */
+.btn-relief-toggle {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fff;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-relief-toggle:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="light"] .btn-relief-toggle {
+  background: #b91c1c;
+  border: 1px solid #991b1b;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(185, 28, 28, 0.2);
+}
+
+[data-theme="light"] .btn-relief-toggle:hover {
+  background: #991b1b;
+}
+
+.relief-suggestions-box {
+  margin-top: 8px;
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.relief-suggestions-header {
+  font-size: 0.7rem;
+  color: #fca5a5;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+[data-theme="light"] .relief-suggestions-header {
+  color: #7f1d1d;
+}
+
+.relief-candidate-price {
+  color: #f87171;
+  font-weight: 600;
+}
+
+[data-theme="light"] .relief-candidate-price {
+  color: #b91c1c;
 }
 
 /* ==========================================================================
@@ -1932,4 +2034,172 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: 100%;
   border-radius: 28px;
   padding: 30px 20px 24px 20px;
+}
+
+/* ==========================================================================
+   GLOBAL TOAST NOTIFICATION SYSTEM (TASK 5)
+   ========================================================================== */
+
+.toast-container {
+  position: absolute;
+  top: calc(max(12px, env(safe-area-inset-top, 12px)) + 58px);
+  left: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 90;
+  pointer-events: none;
+  max-width: calc(100% - 28px);
+  margin: 0 auto;
+}
+
+.toast-notification {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: toastSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.2s ease;
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-notification {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.toast-close-btn:hover {
+  opacity: 1;
+}
+
+/* Toast Variants - Dark Mode (Default) */
+.toast-notification.toast-success {
+  background: rgba(6, 44, 30, 0.94);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #a7f3d0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.15);
+}
+.toast-notification.toast-success .toast-icon {
+  color: #10b981;
+}
+
+.toast-notification.toast-error {
+  background: rgba(45, 12, 12, 0.94);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(239, 68, 68, 0.15);
+}
+.toast-notification.toast-error .toast-icon {
+  color: #ef4444;
+}
+
+.toast-notification.toast-warning {
+  background: rgba(46, 29, 6, 0.94);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fde68a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(245, 158, 11, 0.15);
+}
+.toast-notification.toast-warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast-notification.toast-info {
+  background: rgba(12, 28, 48, 0.94);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #bae6fd;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(56, 189, 248, 0.15);
+}
+.toast-notification.toast-info .toast-icon {
+  color: #38bdf8;
+}
+
+/* Toast Variants - Light Mode */
+[data-theme="light"] .toast-notification.toast-success {
+  background: #ffffff;
+  border: 1.5px solid #10b981;
+  color: #065f46;
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .toast-notification.toast-success .toast-icon {
+  color: #059669;
+}
+
+[data-theme="light"] .toast-notification.toast-error {
+  background: #ffffff;
+  border: 1.5px solid #ef4444;
+  color: #991b1b;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .toast-notification.toast-error .toast-icon {
+  color: #dc2626;
+}
+
+[data-theme="light"] .toast-notification.toast-warning {
+  background: #ffffff;
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .toast-notification.toast-warning .toast-icon {
+  color: #d97706;
+}
+
+[data-theme="light"] .toast-notification.toast-info {
+  background: #ffffff;
+  border: 1.5px solid #0284c7;
+  color: #075985;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .toast-notification.toast-info .toast-icon {
+  color: #0284c7;
 }

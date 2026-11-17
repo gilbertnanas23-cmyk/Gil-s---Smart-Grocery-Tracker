@@ -153,28 +153,17 @@ export function BudgetSafetyGauge({
             {budgetInfo.status === 'OVERBUDGET' && (
               <div style={{ marginTop: 6 }}>
                 <button
+                  type="button"
+                  className="btn-relief-toggle"
                   onClick={() => setShowReliefSuggestions(!showReliefSuggestions)}
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.25)',
-                    border: '1px solid rgba(239, 68, 68, 0.5)',
-                    color: '#fff',
-                    borderRadius: '8px',
-                    padding: '4px 10px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5
-                  }}
                 >
                   <Sparkles size={13} />
-                  {showReliefSuggestions ? 'Sembunyikan Solusi' : 'Penyelamat Kasir: Saran Item Dibatalkan'}
+                  <span>{showReliefSuggestions ? 'Sembunyikan Solusi' : 'Penyelamat Kasir: Saran Item Dibatalkan'}</span>
                 </button>
 
                 {showReliefSuggestions && reliefCandidates.length > 0 && (
-                  <div style={{ marginTop: 8, background: 'var(--bg-input)', borderRadius: '8px', padding: '8px' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#fca5a5', marginBottom: 6 }}>
+                  <div className="relief-suggestions-box">
+                    <div className="relief-suggestions-header">
                       Pilih barang berikut untuk dibatalkan agar total pas di dompet (kurang Rp {overAmount.toLocaleString('id-ID')}):
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -193,13 +182,14 @@ export function BudgetSafetyGauge({
                         >
                           <span style={{ color: 'var(--text-main)' }}>{candidate.name} ({candidate.qty}x)</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ color: '#f87171', fontWeight: 600 }}>
+                            <span className="relief-candidate-price">
                               -{formatRupiah(candidate.lineTotal)}
                             </span>
                             <button
+                              type="button"
                               onClick={() => onRemoveItem && onRemoveItem(candidate.id)}
                               style={{
-                                background: '#ef4444',
+                                background: 'var(--danger)',
                                 border: 'none',
                                 color: '#fff',
                                 padding: '2px 6px',

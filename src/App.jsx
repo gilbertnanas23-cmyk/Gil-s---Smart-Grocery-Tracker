@@ -60,9 +60,12 @@ import {
   subscribeToUserGroceryRealtime
 } from './services/supabase';
 import { calculateTieredDiscount } from './utils/calculations';
-import { formatRupiah } from './utils/formatters';
+import { formatRupiah, formatDateLong } from './utils/formatters';
+import { useToast, ToastContainer } from './context/ToastContext';
 
 export function App() {
+  const toast = useToast();
+
   // Authentication state
   const [currentUser, setCurrentUser] = useState(() => getStoredAuthUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -208,6 +211,7 @@ export function App() {
   const handleLoginSuccess = async (user) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
+    toast.success('Berhasil masuk ke akun.');
 
     if (user && user.uid) {
       const cloudData = await syncUserDataFromCloud(user.uid);
@@ -243,6 +247,7 @@ export function App() {
     setSessions(INITIAL_PAST_SESSIONS);
     setCurrentUser(null);
     setIsProfileModalOpen(false);
+    toast.success('Berhasil keluar dari akun.');
   };
 
   // Calculate cart items with net line totals
@@ -268,19 +273,28 @@ export function App() {
 
   // Quantity Stepper (F-02)
   const handleUpdateQty = (itemId, newQty) => {
-    const updated = cart.map((item) => {
-      if (item.id === itemId) {
-        return { ...item, qty: Math.max(1, newQty) };
+    const safeQty = Math.max(1, newQty);
+    const item = cart.find((i) => i.id === itemId);
+    const updated = cart.map((i) => {
+      if (i.id === itemId) {
+        return { ...i, qty: safeQty };
       }
-      return item;
+      return i;
     });
     updateCartAndSave(updated);
+    if (item && item.qty !== safeQty) {
+      toast.info(`Jumlah ${item.name} diperbarui menjadi ${safeQty}.`);
+    }
   };
 
   // Delete item
   const handleDeleteItem = (itemId) => {
-    const updated = cart.filter((item) => item.id !== itemId);
+    const item = cart.find((i) => i.id === itemId);
+    const updated = cart.filter((i) => i.id !== itemId);
     updateCartAndSave(updated);
+    if (item) {
+      toast.info(`${item.name} dihapus dari troli.`);
+    }
   };
 
   // Add / Edit item
@@ -295,9 +309,11 @@ export function App() {
       const updated = cart.map((item) => (item.id === dataWithStoreAndDate.id ? dataWithStoreAndDate : item));
       updateCartAndSave(updated);
       setEditingItem(null);
+      toast.success('Perubahan barang berhasil disimpan.');
     } else {
       const updated = [dataWithStoreAndDate, ...cart];
       updateCartAndSave(updated);
+      toast.success(`${itemData.name} berhasil ditambahkan ke troli.`);
     }
   };
 
@@ -305,18 +321,25 @@ export function App() {
   const handleUpdateBudget = (newCap) => {
     setBudgetCap(newCap);
     saveLocalBudget(newCap);
+    toast.success('Batas uang saku berhasil diperbarui.');
   };
 
   // Update active store
   const handleStoreChange = (newStore) => {
-    setSelectedStore(newStore);
-    saveLocalStore(newStore);
+    if (newStore !== selectedStore) {
+      setSelectedStore(newStore);
+      saveLocalStore(newStore);
+      toast.info(`Lokasi belanja diubah ke ${newStore}.`);
+    }
   };
 
   // Update active date
   const handleDateChange = (newDate) => {
-    setSelectedDate(newDate);
-    saveLocalDate(newDate);
+    if (newDate !== selectedDate) {
+      setSelectedDate(newDate);
+      saveLocalDate(newDate);
+      toast.info(`Tanggal transaksi diubah menjadi ${formatDateLong(newDate)}.`);
+    }
   };
 
   const handleOpenMainDatePicker = () => {
@@ -348,6 +371,7 @@ export function App() {
     setSessions(getPastSessions());
     setCatalog(getMasterCatalog());
     setActiveTab('history');
+    toast.success('Transaksi berhasil disimpan.');
   };
 
   // Protected: Attempt to checkout
@@ -395,6 +419,7 @@ export function App() {
     }));
     updateCartAndSave(reloadedItems);
     setActiveTab('cart');
+    toast.success('Daftar belanja sebelumnya berhasil dimuat.');
   };
 
   // Reset to default sample
@@ -405,6 +430,7 @@ export function App() {
     setSelectedDate(getLocalDate());
     setCatalog(getMasterCatalog());
     setSessions(getPastSessions());
+    toast.info('Data belanja berhasil direset ke sampel awal.');
   };
 
   // Open discount modal from item
@@ -480,6 +506,7 @@ export function App() {
 
         {/* Scrollable Screen Content */}
         <div className="app-screen">
+          <ToastContainer />
           <div className="app-content-scroll">
             {/* TAB 1: TROLI BELANJA AKTIF */}
             {activeTab === 'cart' && (
@@ -738,7 +765,7 @@ export function App() {
                 style={{ minHeight: '46px' }}
               >
                 <Plus size={18} strokeWidth={2.6} />
-                <span>+ Barang</span>
+                <span>Barang</span>
               </button>
 
               <button
