@@ -15,7 +15,8 @@ import {
   Calendar,
   Trash2,
   ArrowUpDown,
-  Check
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { BudgetSafetyGauge } from './components/BudgetSafetyGauge';
@@ -941,6 +942,37 @@ export function App() {
                   cartItems={enrichedCart}
                   onRemoveItem={handleDeleteItem}
                 />
+
+                {/* Horizontal Shopping Workflow Guide (4 Steps) */}
+                <div className="shopping-workflow-guide" aria-label="Alur panduan belanja cerdas">
+                  <div className="shopping-workflow-scroll">
+                    <div className="shopping-guide-step">
+                      <span className="shopping-guide-badge">1</span>
+                      <span className="shopping-guide-text">Atur Budget</span>
+                    </div>
+
+                    <ChevronRight size={12} className="shopping-guide-arrow" aria-hidden="true" />
+
+                    <div className="shopping-guide-step">
+                      <span className="shopping-guide-badge">2</span>
+                      <span className="shopping-guide-text">Tambah Barang</span>
+                    </div>
+
+                    <ChevronRight size={12} className="shopping-guide-arrow" aria-hidden="true" />
+
+                    <div className="shopping-guide-step">
+                      <span className="shopping-guide-badge">3</span>
+                      <span className="shopping-guide-text">Cek Promo &amp; Harga</span>
+                    </div>
+
+                    <ChevronRight size={12} className="shopping-guide-arrow" aria-hidden="true" />
+
+                    <div className="shopping-guide-step">
+                      <span className="shopping-guide-badge">4</span>
+                      <span className="shopping-guide-text">Ke Kasir</span>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Section Header & Fast Actions */}
                 <div className="section-title-row">

@@ -774,6 +774,96 @@ body {
 }
 
 /* ==========================================================================
+   HORIZONTAL SHOPPING WORKFLOW GUIDE (4 Steps)
+   ========================================================================== */
+
+.shopping-workflow-guide {
+  width: 100%;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.shopping-workflow-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 1px;
+}
+
+.shopping-workflow-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.shopping-guide-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 4px 10px 4px 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.shopping-guide-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.shopping-guide-text {
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: -0.1px;
+}
+
+.shopping-guide-arrow {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Light Mode Contrast Upgrades */
+[data-theme="light"] .shopping-guide-step {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .shopping-guide-badge {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+[data-theme="light"] .shopping-guide-text {
+  color: #1e293b;
+}
+
+[data-theme="light"] .shopping-guide-arrow {
+  color: #94a3b8;
+}
+
+/* ==========================================================================
    GROCERY ITEMS LIST & CARDS (F-01, F-02, F-04)
    ========================================================================== */
 
