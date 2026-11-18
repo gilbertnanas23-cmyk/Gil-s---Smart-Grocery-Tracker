@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { BudgetSafetyGauge } from './components/BudgetSafetyGauge';
+import { FloatingBudgetMonitor } from './components/FloatingBudgetMonitor';
 import { GroceryItemCard } from './components/GroceryItemCard';
 import { AddItemModal } from './components/AddItemModal';
 import { DiscountCalculatorModal } from './components/DiscountCalculatorModal';
@@ -122,6 +123,11 @@ export function App() {
   const [pendingBudgetAction, setPendingBudgetAction] = useState(null); // { execute: Function, projectedTotal: number }
   const [isClearCartModalOpen, setIsClearCartModalOpen] = useState(false);
   const [isClearingCart, setIsClearingCart] = useState(false);
+
+  // Floating Budget Monitor state & refs
+  const [isBudgetGaugeVisible, setIsBudgetGaugeVisible] = useState(true);
+  const budgetGaugeRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   // Supabase connection status
   const [supabaseStatus, setSupabaseStatus] = useState(() => {
@@ -661,6 +667,67 @@ export function App() {
     setIsDiscountModalOpen(true);
   };
 
+  // Observe main BudgetSafetyGauge visibility to toggle FloatingBudgetMonitor
+  useEffect(() => {
+    if (activeTab !== 'cart') {
+      setIsBudgetGaugeVisible(true);
+      return;
+    }
+
+    const target = budgetGaugeRef.current;
+    const root = scrollContainerRef.current;
+    if (!target || !root) return;
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsBudgetGaugeVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsBudgetGaugeVisible(entry.isIntersecting);
+      },
+      {
+        root: root,
+        threshold: 0
+      }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [activeTab]);
+
+  // Smooth scroll back to main Pengendali Dompet panel
+  const handleScrollToBudget = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (budgetGaugeRef.current) {
+      budgetGaugeRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Determine whether any modal is currently visible
+  const isAnyModalOpen = isAuthModalOpen ||
+    isProfileModalOpen ||
+    isAddStoreModalOpen ||
+    isAddModalOpen ||
+    isDiscountModalOpen ||
+    isCheckoutModalOpen ||
+    isSettingsModalOpen ||
+    isBudgetExceededModalOpen ||
+    isClearCartModalOpen;
+
+  // Show floating budget monitor only on cart, when main gauge is scrolled out of view, cart has items, and no modal is open
+  const showFloatingBudget =
+    activeTab === 'cart' &&
+    !isBudgetGaugeVisible &&
+    enrichedCart.length > 0 &&
+    !isAnyModalOpen;
+
   const userDisplayName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
   const userFirstName = userDisplayName.split(' ')[0];
 
@@ -725,7 +792,7 @@ export function App() {
         {/* Scrollable Screen Content */}
         <div className="app-screen">
           <ToastContainer />
-          <div className="app-content-scroll">
+          <div className="app-content-scroll" ref={scrollContainerRef}>
             {/* TAB 1: TROLI BELANJA AKTIF */}
             {activeTab === 'cart' && (
               <div>
@@ -825,6 +892,7 @@ export function App() {
 
                 {/* F-05: Budget Safety Cap Gauge */}
                 <BudgetSafetyGauge
+                  ref={budgetGaugeRef}
                   totalCart={totalCart}
                   budgetCap={budgetCap}
                   onUpdateBudget={handleUpdateBudget}
@@ -993,6 +1061,14 @@ export function App() {
               </div>
             )}
           </div>
+
+          {/* Floating Budget Monitor (Visible only on cart when main budget gauge is scrolled out of view) */}
+          <FloatingBudgetMonitor
+            isVisible={showFloatingBudget}
+            totalCart={totalCart}
+            budgetCap={budgetCap}
+            onScrollToBudget={handleScrollToBudget}
+          />
 
           {/* Floating Primary Action Buttons (Sticky above Bottom Nav on Cart) */}
           {activeTab === 'cart' && (

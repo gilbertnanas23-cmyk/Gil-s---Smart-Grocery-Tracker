@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, UserPlus, Mail, Lock, Check, X, KeyRound, ArrowLeft, AlertCircle } from 'lucide-react';
+import { User, UserPlus, Mail, Lock, Check, X, KeyRound, ArrowLeft, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import {
   loginWithSupabase,
   registerWithSupabase,
@@ -20,6 +20,8 @@ export function LoginView({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -27,7 +29,14 @@ export function LoginView({
 
   useEffect(() => {
     setAuthMode(initialMode);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   }, [initialMode]);
+
+  useEffect(() => {
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  }, [authMode]);
 
   useEffect(() => {
     if (resetNoticeMessage) {
@@ -315,7 +324,7 @@ export function LoginView({
                 <Lock size={19} strokeWidth={2} color="#94a3b8" />
               </span>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 className="login-input-field"
                 placeholder="PASSWORD (MIN 6 KARAKTER)"
                 value={password}
@@ -326,6 +335,15 @@ export function LoginView({
                 spellCheck="false"
                 required
               />
+              <button
+                type="button"
+                className="login-password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             {/* Register Mode: Konfirmasi Password */}
@@ -335,7 +353,7 @@ export function LoginView({
                   <Lock size={19} strokeWidth={2} color="#94a3b8" />
                 </span>
                 <input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   className="login-input-field"
                   placeholder="KONFIRMASI PASSWORD"
                   value={confirmPassword}
@@ -346,6 +364,15 @@ export function LoginView({
                   spellCheck="false"
                   required
                 />
+                <button
+                  type="button"
+                  className="login-password-toggle-btn"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  title={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             )}
 
@@ -515,7 +542,7 @@ export function LoginView({
                 <Lock size={19} strokeWidth={2} color="#94a3b8" />
               </span>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 className="login-input-field"
                 placeholder="KATA SANDI BARU (MIN 6 KARAKTER)"
                 value={password}
@@ -524,6 +551,15 @@ export function LoginView({
                 spellCheck="false"
                 required
               />
+              <button
+                type="button"
+                className="login-password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             <div className="login-input-pill">
@@ -531,7 +567,7 @@ export function LoginView({
                 <Lock size={19} strokeWidth={2} color="#94a3b8" />
               </span>
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 className="login-input-field"
                 placeholder="KONFIRMASI KATA SANDI BARU"
                 value={confirmPassword}
@@ -540,6 +576,15 @@ export function LoginView({
                 spellCheck="false"
                 required
               />
+              <button
+                type="button"
+                className="login-password-toggle-btn"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                title={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             <div className="login-btn-container" style={{ marginTop: 8 }}>

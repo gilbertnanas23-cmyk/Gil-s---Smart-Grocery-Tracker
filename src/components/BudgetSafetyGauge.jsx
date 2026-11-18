@@ -3,13 +3,13 @@ import { ShieldCheck, AlertTriangle, AlertOctagon, Wallet, Edit3, Check, Sparkle
 import { formatRupiah } from '../utils/formatters';
 import { calculateBudgetStatus } from '../utils/calculations';
 
-export function BudgetSafetyGauge({
+export const BudgetSafetyGauge = React.forwardRef(function BudgetSafetyGauge({
   totalCart,
   budgetCap,
   onUpdateBudget,
   cartItems = [],
   onRemoveItem
-}) {
+}, ref) {
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [tempBudget, setTempBudget] = useState(budgetCap);
   const [showReliefSuggestions, setShowReliefSuggestions] = useState(false);
@@ -32,7 +32,7 @@ export function BudgetSafetyGauge({
     .sort((a, b) => (b.lineTotal || 0) - (a.lineTotal || 0));
 
   return (
-    <div className={`budget-gauge-card status-${budgetInfo.status.toLowerCase()}`}>
+    <div ref={ref} className={`budget-gauge-card status-${budgetInfo.status.toLowerCase()}`}>
       {/* Header Row */}
       <div className="gauge-header-row">
         <div className="gauge-title-box">
@@ -214,4 +214,6 @@ export function BudgetSafetyGauge({
       )}
     </div>
   );
-}
+});
+
+export default BudgetSafetyGauge;
