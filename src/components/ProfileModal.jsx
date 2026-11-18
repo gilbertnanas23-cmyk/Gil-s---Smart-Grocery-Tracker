@@ -257,12 +257,12 @@ export function ProfileModal({
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
             <button
               type="submit"
               className="btn-primary"
               disabled={saving}
-              style={{ flex: 1, height: 42, justifyContent: 'center' }}
+              style={{ flex: 1.3, minHeight: 44, justifyContent: 'center' }}
             >
               <Save size={16} />
               <span>{saving ? 'Menyimpan...' : 'Simpan Profil'}</span>
@@ -270,25 +270,12 @@ export function ProfileModal({
 
             <button
               type="button"
-              className="icon-btn"
+              className="btn-danger-outline"
               onClick={() => {
                 onClose();
                 onLogout();
               }}
-              title="Keluar dari Akun"
-              style={{
-                height: 42,
-                padding: '0 16px',
-                borderRadius: 9999,
-                background: 'var(--danger-bg)',
-                border: '1px solid var(--danger-border)',
-                color: 'var(--danger)',
-                fontWeight: 700,
-                fontSize: '0.78rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6
-              }}
+              title="Keluar dari Akun Belanja"
             >
               <LogOut size={16} />
               <span>Keluar</span>

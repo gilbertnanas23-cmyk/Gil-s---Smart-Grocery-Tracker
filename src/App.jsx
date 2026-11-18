@@ -29,6 +29,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { BottomNav } from './components/BottomNav';
 import { BudgetExceededModal } from './components/BudgetExceededModal';
 import { ClearCartModal } from './components/ClearCartModal';
+import { AddStoreModal } from './components/AddStoreModal';
 import {
   INITIAL_CART_ITEMS,
   DEFAULT_MASTER_CATALOG,
@@ -42,6 +43,8 @@ import {
   saveLocalBudget,
   getLocalStore,
   saveLocalStore,
+  getLocalCustomStores,
+  addLocalCustomStore,
   getLocalDate,
   saveLocalDate,
   getMasterCatalog,
@@ -81,6 +84,8 @@ export function App() {
   const [cart, setCart] = useState(() => getLocalCart());
   const [budgetCap, setBudgetCap] = useState(() => getLocalBudget());
   const [selectedStore, setSelectedStore] = useState(() => getLocalStore());
+  const [customStores, setCustomStores] = useState(() => getLocalCustomStores(currentUser?.uid || 'guest'));
+  const [isAddStoreModalOpen, setIsAddStoreModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => getLocalDate());
   const mainDateInputRef = useRef(null);
   const prevBudgetStatusRef = useRef(null);
@@ -100,6 +105,9 @@ export function App() {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     saveLocalTheme(next);
+    if (currentUser && currentUser.uid) {
+      triggerCloudSync();
+    }
   };
 
   // Modals
@@ -159,6 +167,14 @@ export function App() {
             if (cloudData.date) setSelectedDate(cloudData.date);
             if (Array.isArray(cloudData.catalog)) setCatalog(cloudData.catalog);
             if (Array.isArray(cloudData.history)) setSessions(cloudData.history);
+            if (Array.isArray(cloudData.customStores)) {
+              setCustomStores(cloudData.customStores);
+            } else {
+              setCustomStores(getLocalCustomStores(user.uid));
+            }
+            if (cloudData.theme && (cloudData.theme === 'light' || cloudData.theme === 'dark')) {
+              setTheme(cloudData.theme);
+            }
 
             const restoredCart = Array.isArray(cloudData.cart) ? cloudData.cart : cart;
             const restoredCap = cloudData.budgetCap ? Number(cloudData.budgetCap) : budgetCap;
@@ -167,8 +183,12 @@ export function App() {
               return sum + (disc.finalPrice * (Number(item.qty) || 1));
             }, 0);
             prevBudgetStatusRef.current = calculateBudgetStatus(restoredTotal, restoredCap).status;
+          } else {
+            setCustomStores(getLocalCustomStores(user.uid));
           }
         });
+      } else {
+        setCustomStores(getLocalCustomStores('guest'));
       }
     };
 
@@ -216,6 +236,14 @@ export function App() {
         setSessions(cloudData.history);
         localStorage.setItem('smart_grocery_history_v1', JSON.stringify(cloudData.history));
       }
+      if (Array.isArray(cloudData.customStores)) {
+        setCustomStores(cloudData.customStores);
+        saveLocalCustomStores(cloudData.customStores, currentUser.uid);
+      }
+      if (cloudData.theme && (cloudData.theme === 'light' || cloudData.theme === 'dark')) {
+        setTheme(cloudData.theme);
+        saveLocalTheme(cloudData.theme);
+      }
     });
 
     return () => {
@@ -233,7 +261,6 @@ export function App() {
   const handleLoginSuccess = async (user) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
-    toast.success('Berhasil masuk ke akun.');
 
     if (user && user.uid) {
       const cloudData = await syncUserDataFromCloud(user.uid);
@@ -244,6 +271,14 @@ export function App() {
         if (cloudData.date) setSelectedDate(cloudData.date);
         if (Array.isArray(cloudData.catalog)) setCatalog(cloudData.catalog);
         if (Array.isArray(cloudData.history)) setSessions(cloudData.history);
+        if (Array.isArray(cloudData.customStores)) {
+          setCustomStores(cloudData.customStores);
+        } else {
+          setCustomStores(getLocalCustomStores(user.uid));
+        }
+        if (cloudData.theme && (cloudData.theme === 'light' || cloudData.theme === 'dark')) {
+          setTheme(cloudData.theme);
+        }
 
         // Pre-seed prevBudgetStatusRef with restored cloud status to prevent false alerts
         const restoredCart = Array.isArray(cloudData.cart) ? cloudData.cart : cart;
@@ -253,6 +288,8 @@ export function App() {
           return sum + (disc.finalPrice * (Number(item.qty) || 1));
         }, 0);
         prevBudgetStatusRef.current = calculateBudgetStatus(restoredTotal, restoredCap).status;
+      } else {
+        setCustomStores(getLocalCustomStores(user.uid));
       }
     }
 
@@ -269,17 +306,18 @@ export function App() {
   const handleLogout = async () => {
     prevBudgetStatusRef.current = 'SAFE';
     triggerCloudSync();
+    const loggingOutUid = currentUser?.uid;
     await signOutFromSupabase();
-    clearUserDataForAccountSwitch();
+    clearUserDataForAccountSwitch(loggingOutUid);
     setCart(INITIAL_CART_ITEMS);
     setBudgetCap(500000);
     setSelectedStore(DEFAULT_STORES[0]);
+    setCustomStores(getLocalCustomStores('guest'));
     setSelectedDate(new Date().toISOString().split('T')[0]);
     setCatalog(DEFAULT_MASTER_CATALOG);
     setSessions(INITIAL_PAST_SESSIONS);
     setCurrentUser(null);
     setIsProfileModalOpen(false);
-    toast.success('Berhasil keluar dari akun.');
   };
 
   // Calculate cart items with net line totals
@@ -318,18 +356,18 @@ export function App() {
     // 1. Normal (SAFE) -> Yellow (WARNING)
     if (prevStatus === 'SAFE' && currentStatus === 'WARNING') {
       toast.warning(
-        `Belanja sudah mencapai ${budgetInfo.percentage}% dari batas uang saku. Sisa ${formatRupiah(budgetInfo.remaining)}.`,
+        `Belanja telah mencapai ${budgetInfo.percentage}% dari batas uang saku. Sisa ${formatRupiah(budgetInfo.remaining)}.`,
         5000,
-        'Peringatan Budget'
+        'Peringatan Anggaran'
       );
     }
     // 2. Normal (SAFE) -> Red (OVERBUDGET) or Yellow (WARNING) -> Red (OVERBUDGET)
     else if ((prevStatus === 'SAFE' || prevStatus === 'WARNING') && currentStatus === 'OVERBUDGET') {
       const overAmount = Math.abs(budgetInfo.remaining);
       toast.error(
-        `Total belanja melebihi anggaran sebesar ${formatRupiah(overAmount)}.`,
+        `Total belanja melebihi batas uang saku sebesar ${formatRupiah(overAmount)}.`,
         8000,
-        'Batas Budget Terlampaui!'
+        'Batas Anggaran Terlampaui!'
       );
     }
 
@@ -353,7 +391,6 @@ export function App() {
   // Quantity Stepper (F-02 & Task B1)
   const executeUpdateQty = (itemId, newQty) => {
     const safeQty = Math.max(1, newQty);
-    const item = cart.find((i) => i.id === itemId);
     const updated = cart.map((i) => {
       if (i.id === itemId) {
         return { ...i, qty: safeQty };
@@ -361,9 +398,6 @@ export function App() {
       return i;
     });
     updateCartAndSave(updated);
-    if (item && item.qty !== safeQty) {
-      toast.info(`Jumlah ${item.name} diperbarui menjadi ${safeQty}.`);
-    }
   };
 
   const handleUpdateQty = (itemId, newQty) => {
@@ -392,12 +426,8 @@ export function App() {
 
   // Delete item
   const handleDeleteItem = (itemId) => {
-    const item = cart.find((i) => i.id === itemId);
     const updated = cart.filter((i) => i.id !== itemId);
     updateCartAndSave(updated);
-    if (item) {
-      toast.info(`${item.name} dihapus dari troli.`);
-    }
   };
 
   // Add / Edit item (Task B1 Budget Protection)
@@ -406,11 +436,9 @@ export function App() {
       const updated = cart.map((item) => (item.id === dataWithStoreAndDate.id ? dataWithStoreAndDate : item));
       updateCartAndSave(updated);
       setEditingItem(null);
-      toast.success('Perubahan barang berhasil disimpan.');
     } else {
       const updated = [dataWithStoreAndDate, ...cart];
       updateCartAndSave(updated);
-      toast.success(`${dataWithStoreAndDate.name} berhasil ditambahkan ke troli.`);
     }
   };
 
@@ -461,7 +489,6 @@ export function App() {
       if (currentUser && currentUser.uid) {
         await triggerCloudSync();
       }
-      toast.success('Semua barang berhasil dihapus dari troli.');
     } catch (err) {
       console.error('Error clearing cart:', err);
       toast.error('Gagal mengosongkan troli belanja.');
@@ -475,16 +502,30 @@ export function App() {
   const handleUpdateBudget = (newCap) => {
     setBudgetCap(newCap);
     saveLocalBudget(newCap);
-    toast.success('Batas uang saku berhasil diperbarui.');
   };
+
+  // All stores including custom stores added by user
+  const allStores = [...DEFAULT_STORES, ...customStores];
 
   // Update active store
   const handleStoreChange = (newStore) => {
     if (newStore !== selectedStore) {
       setSelectedStore(newStore);
       saveLocalStore(newStore);
-      toast.info(`Lokasi belanja diubah ke ${newStore}.`);
     }
+  };
+
+  // Add new store directly from dashboard
+  const handleAddNewStore = (newStoreName) => {
+    const trimmed = (newStoreName || '').trim();
+    if (!trimmed) return;
+    const activeUid = currentUser?.uid || 'guest';
+    const added = addLocalCustomStore(trimmed, activeUid);
+    if (added) {
+      setCustomStores(getLocalCustomStores(activeUid));
+    }
+    setSelectedStore(trimmed);
+    saveLocalStore(trimmed);
   };
 
   // Update active date
@@ -492,7 +533,6 @@ export function App() {
     if (newDate !== selectedDate) {
       setSelectedDate(newDate);
       saveLocalDate(newDate);
-      toast.info(`Tanggal transaksi diubah menjadi ${formatDateLong(newDate)}.`);
     }
   };
 
@@ -525,7 +565,6 @@ export function App() {
     setSessions(getPastSessions());
     setCatalog(getMasterCatalog());
     setActiveTab('history');
-    toast.success('Transaksi berhasil disimpan.');
   };
 
   // Protected: Attempt to checkout
@@ -558,7 +597,6 @@ export function App() {
   const executeReloadSession = (reloadedItems) => {
     updateCartAndSave(reloadedItems);
     setActiveTab('cart');
-    toast.success('Daftar belanja sebelumnya berhasil dimuat.');
   };
 
   // Reload past session to cart (Task B1 Budget Protection)
@@ -599,7 +637,6 @@ export function App() {
     setSelectedDate(getLocalDate());
     setCatalog(getMasterCatalog());
     setSessions(getPastSessions());
-    toast.info('Data belanja berhasil direset ke sampel awal.');
   };
 
   // Open discount modal from item
@@ -695,7 +732,14 @@ export function App() {
                     <MapPin size={14} color="var(--primary-light)" style={{ flexShrink: 0 }} />
                     <select
                       value={selectedStore}
-                      onChange={(e) => handleStoreChange(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '__ADD_NEW_STORE__') {
+                          setIsAddStoreModalOpen(true);
+                        } else {
+                          handleStoreChange(val);
+                        }
+                      }}
                       style={{
                         width: '100%',
                         background: 'none',
@@ -709,11 +753,17 @@ export function App() {
                       }}
                       title="Ubah Toko / Lokasi Belanja Aktif"
                     >
-                      {DEFAULT_STORES.map((s) => (
+                      {allStores.map((s) => (
                         <option key={s} value={s} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
                           {s}
                         </option>
                       ))}
+                      <option
+                        value="__ADD_NEW_STORE__"
+                        style={{ background: 'var(--bg-surface)', color: 'var(--primary-light)', fontWeight: 700 }}
+                      >
+                        + Tambah Lokasi Baru
+                      </option>
                     </select>
                   </div>
 
@@ -773,12 +823,12 @@ export function App() {
                 {/* Section Header & Fast Actions */}
                 <div className="section-title-row">
                   <div className="section-heading">
-                    <ShoppingCart size={17} color="var(--primary-light)" />
-                    <span>Daftar Belanjaan di Troli</span>
+                    <ShoppingCart size={17} color="var(--primary-light)" style={{ flexShrink: 0 }} />
+                    <span className="section-title-text">Daftar Belanjaan di Troli</span>
                     <span className="section-count-badge">{enrichedCart.length} item</span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <div className="section-actions-group">
                     {cart.length > 0 && (
                       <button
                         type="button"
@@ -1032,6 +1082,7 @@ export function App() {
           onSaveItem={handleSaveItem}
           editItem={editingItem}
           catalog={catalog}
+          customStores={customStores}
         />
 
         <CheckoutModal
@@ -1069,6 +1120,13 @@ export function App() {
           onConfirm={handleConfirmClearCart}
           itemCount={cart.length}
           isProcessing={isClearingCart}
+        />
+
+        <AddStoreModal
+          isOpen={isAddStoreModalOpen}
+          onClose={() => setIsAddStoreModalOpen(false)}
+          onAddStore={handleAddNewStore}
+          existingStores={allStores}
         />
       </main>
     </div>

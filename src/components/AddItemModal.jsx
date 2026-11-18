@@ -18,16 +18,15 @@ import { GENERIC_PRODUCTS, STANDARD_UNITS, getRecommendedUnits } from '../data/p
 import { formatRupiah } from '../utils/formatters';
 import { calculateTieredDiscount, compareHistoricalPrice } from '../utils/calculations';
 import { getLocalStore, getLocalDate, getTodayLocalDateString } from '../services/storage';
-import { useToast } from '../context/ToastContext';
 
 export function AddItemModal({
   isOpen,
   onClose,
   onSaveItem,
   editItem = null,
-  catalog = []
+  catalog = [],
+  customStores = []
 }) {
-  const toast = useToast();
   const [name, setName] = useState('');
   const [category, setCategory] = useState('pokok');
   const [unit, setUnit] = useState('pcs');
@@ -42,6 +41,8 @@ export function AddItemModal({
   const [customStoreName, setCustomStoreName] = useState('');
   const [date, setDate] = useState(() => getLocalDate());
   const [validationError, setValidationError] = useState('');
+
+  const allStores = [...DEFAULT_STORES, ...(customStores || [])];
 
   // Searchable generic product combobox states
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
@@ -105,7 +106,7 @@ export function AddItemModal({
       setDiscountString(editItem.discountString || '');
 
       const currentItemStore = editItem.store || getLocalStore();
-      if (DEFAULT_STORES.includes(currentItemStore)) {
+      if (allStores.includes(currentItemStore)) {
         setStore(currentItemStore);
         setIsCustomStore(false);
         setCustomStoreName('');
@@ -129,7 +130,7 @@ export function AddItemModal({
       setDiscountString('');
 
       const defaultSavedStore = getLocalStore();
-      if (DEFAULT_STORES.includes(defaultSavedStore)) {
+      if (allStores.includes(defaultSavedStore)) {
         setStore(defaultSavedStore);
         setIsCustomStore(false);
         setCustomStoreName('');
@@ -141,7 +142,7 @@ export function AddItemModal({
 
       setDate(getLocalDate() || getTodayLocalDateString());
     }
-  }, [editItem, isOpen]);
+  }, [editItem, isOpen, customStores]);
 
   if (!isOpen) return null;
 
@@ -237,33 +238,28 @@ export function AddItemModal({
     // Validasi Aktif Bahasa Indonesia (F-01)
     if (!name.trim()) {
       setValidationError('Silakan masukkan nama produk belanja Anda.');
-      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     if (isCustomStore && !customStoreName.trim()) {
       setValidationError('Silakan ketik nama toko atau pilih salah satu toko dari daftar.');
-      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     const priceNum = Number(unitPrice);
     if (unitPrice === '' || isNaN(priceNum) || priceNum < 0) {
       setValidationError('Harga satuan wajib diisi angka valid dan tidak boleh bernilai negatif.');
-      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     const qtyNum = Number(qty);
     if (isNaN(qtyNum) || qtyNum <= 0) {
       setValidationError('Kuantitas (Qty) barang minimal 1.');
-      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
     if (!date) {
       setValidationError('Tanggal transaksi belanja wajib dipilih.');
-      toast.error('Periksa kembali data barang yang dimasukkan.');
       return;
     }
 
@@ -327,7 +323,7 @@ export function AddItemModal({
                 onChange={handleStoreChange}
                 required
               >
-                {DEFAULT_STORES.map((s) => (
+                {allStores.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
                 <option value="CUSTOM">+ Toko Lainnya (Ketik Manual)...</option>

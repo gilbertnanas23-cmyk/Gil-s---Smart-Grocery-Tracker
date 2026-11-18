@@ -75,8 +75,8 @@ export function DiscountCalculatorModal({
               Masukkan angka di rak untuk membongkar harga aslinya detik ini juga:
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Harga Awal Produk di Rak (Rp)</label>
+            <div className="form-group promo-field-group" style={{ marginBottom: 12 }}>
+              <label className="form-label promo-field-label">Harga Awal Produk di Rak (Rp)</label>
               <input
                 type="number"
                 className="form-input"
@@ -87,10 +87,10 @@ export function DiscountCalculatorModal({
             </div>
 
             <div className="form-row-2col">
-              <div className="form-group">
-                <label className="form-label">
+              <div className="form-group promo-field-group">
+                <label className="form-label promo-field-label">
                   <span>Diskon Bertumpuk</span>
-                  <span className="form-label-hint">contoh: 50%+20%</span>
+                  <span className="promo-field-hint">contoh: 50%+20%</span>
                 </label>
                 <input
                   type="text"
@@ -101,10 +101,10 @@ export function DiscountCalculatorModal({
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">
-                  <span>Opsi Sebelah (Potongan Tunai)</span>
-                  <span className="form-label-hint" style={{ opacity: 0, userSelect: 'none' }}>&nbsp;</span>
+              <div className="form-group promo-field-group">
+                <label className="form-label promo-field-label">
+                  <span>Potongan Tunai</span>
+                  <span className="promo-field-hint" style={{ color: 'var(--text-dim)', fontWeight: 400 }}>opsional</span>
                 </label>
                 <input
                   type="number"
@@ -197,8 +197,8 @@ export function DiscountCalculatorModal({
                 Opsi A (Kemasan Kecil / Eceran)
               </div>
               <div className="form-row-2col">
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Harga Total (Rp)</label>
+                <div className="form-group promo-field-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label promo-field-label">Harga Total (Rp)</label>
                   <input
                     type="number"
                     className="form-input"
@@ -206,8 +206,8 @@ export function DiscountCalculatorModal({
                     onChange={(e) => setPackA({ ...packA, price: Number(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Isi / Volume (Liter/kg)</label>
+                <div className="form-group promo-field-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label promo-field-label">Isi / Volume (Liter/kg)</label>
                   <input
                     type="number"
                     step="0.1"
@@ -224,8 +224,8 @@ export function DiscountCalculatorModal({
                 Opsi B (Kemasan Besar / Grosir)
               </div>
               <div className="form-row-2col">
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Harga Total (Rp)</label>
+                <div className="form-group promo-field-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label promo-field-label">Harga Total (Rp)</label>
                   <input
                     type="number"
                     className="form-input"
@@ -233,8 +233,8 @@ export function DiscountCalculatorModal({
                     onChange={(e) => setPackB({ ...packB, price: Number(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Isi / Volume (Liter/kg)</label>
+                <div className="form-group promo-field-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label promo-field-label">Isi / Volume (Liter/kg)</label>
                   <input
                     type="number"
                     step="0.1"

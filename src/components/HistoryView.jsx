@@ -6,8 +6,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Equal,
-  Download,
-  Upload,
   RefreshCw,
   ShoppingCart,
   ChevronDown,
@@ -15,8 +13,6 @@ import {
   MapPin
 } from 'lucide-react';
 import { formatRupiah, formatDate } from '../utils/formatters';
-import { exportAllData, importAllData } from '../services/storage';
-import { useToast } from '../context/ToastContext';
 
 export function HistoryView({
   sessions = [],
@@ -24,11 +20,9 @@ export function HistoryView({
   onReloadSessionToCart,
   onRefreshData
 }) {
-  const toast = useToast();
   const [activeSubTab, setActiveSubTab] = useState('sessions'); // 'sessions' | 'database'
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedSessionId, setExpandedSessionId] = useState(null);
-  const [exportNotice, setExportNotice] = useState('');
 
   // Filter master catalog items
   const filteredCatalog = catalog.filter(item =>
@@ -39,36 +33,6 @@ export function HistoryView({
 
   const toggleSessionExpand = (id) => {
     setExpandedSessionId(expandedSessionId === id ? null : id);
-  };
-
-  const handleExport = () => {
-    const data = exportAllData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `smart_grocery_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('File backup JSON berhasil diunduh!');
-  };
-
-  const handleImport = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result);
-        importAllData(parsed);
-        if (onRefreshData) onRefreshData();
-        toast.success('Data belanja berhasil dipulihkan!');
-      } catch (err) {
-        toast.error('Format file JSON tidak sesuai.');
-      }
-    };
-    reader.readAsText(file);
   };
 
   return (
@@ -91,51 +55,13 @@ export function HistoryView({
         </button>
       </div>
 
-      {exportNotice && (
-        <div style={{
-          background: 'rgba(16, 185, 129, 0.2)',
-          border: '1px solid #10b981',
-          color: '#34d399',
-          padding: '8px 12px',
-          borderRadius: '10px',
-          fontSize: '0.75rem',
-          marginBottom: 10,
-          textAlign: 'center'
-        }}>
-          {exportNotice}
-        </div>
-      )}
-
       {/* SUBTAB 1: Riwayat Sesi Struk Belanja Bulanan */}
       {activeSubTab === 'sessions' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ marginBottom: 12 }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               Struk digital abadi (bebas buram/hilang):
             </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                onClick={handleExport}
-                className="icon-btn"
-                style={{ width: 30, height: 30 }}
-                title="Ekspor Backup Data JSON"
-              >
-                <Download size={14} />
-              </button>
-              <label
-                className="icon-btn"
-                style={{ width: 30, height: 30, cursor: 'pointer' }}
-                title="Impor Backup Data JSON"
-              >
-                <Upload size={14} />
-                <input
-                  type="file"
-                  accept=".json"
-                  style={{ display: 'none' }}
-                  onChange={handleImport}
-                />
-              </label>
-            </div>
           </div>
 
           {sessions.length === 0 ? (

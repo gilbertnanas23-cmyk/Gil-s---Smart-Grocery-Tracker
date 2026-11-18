@@ -17,6 +17,7 @@ const KEYS = {
   CART: 'smart_grocery_cart_v1',
   BUDGET: 'smart_grocery_budget_v1',
   STORE: 'smart_grocery_store_v1',
+  CUSTOM_STORES: 'smart_grocery_custom_stores_v1',
   DATE: 'smart_grocery_date_v1',
   CATALOG: 'smart_grocery_catalog_v1',
   HISTORY: 'smart_grocery_history_v1',
@@ -66,6 +67,56 @@ export function saveLocalStore(storeName) {
   localStorage.setItem(KEYS.STORE, val);
   triggerCloudSync();
   return val;
+}
+
+export function getLocalCustomStores(userId = null) {
+  try {
+    const user = userId || getStoredAuthUser()?.uid || 'guest';
+    const storageKey = `${KEYS.CUSTOM_STORES}_${user}`;
+    let saved = localStorage.getItem(storageKey);
+    // Fallback migration dari key tanpa prefix jika guest
+    if (!saved && user === 'guest') {
+      saved = localStorage.getItem(KEYS.CUSTOM_STORES);
+    }
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(s => typeof s === 'string' && s.trim().length > 0);
+      }
+    }
+  } catch (e) {
+    console.warn('Gagal membaca custom stores dari storage:', e);
+  }
+  return [];
+}
+
+export function saveLocalCustomStores(stores, userId = null) {
+  try {
+    const user = userId || getStoredAuthUser()?.uid || 'guest';
+    const storageKey = `${KEYS.CUSTOM_STORES}_${user}`;
+    const valid = Array.isArray(stores) ? stores.map(s => String(s).trim()).filter(Boolean) : [];
+    localStorage.setItem(storageKey, JSON.stringify(valid));
+    triggerCloudSync();
+    return valid;
+  } catch (e) {
+    console.error('Gagal menyimpan custom stores ke storage:', e);
+    return [];
+  }
+}
+
+export function addLocalCustomStore(name, userId = null) {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return null;
+  const user = userId || getStoredAuthUser()?.uid || 'guest';
+  const existing = getLocalCustomStores(user);
+  const existsInDefault = DEFAULT_STORES.some(s => s.toLowerCase() === trimmed.toLowerCase());
+  const existsInCustom = existing.some(s => s.toLowerCase() === trimmed.toLowerCase());
+  if (existsInDefault || existsInCustom) {
+    return null;
+  }
+  const updated = [...existing, trimmed];
+  saveLocalCustomStores(updated, user);
+  return trimmed;
 }
 
 export function getLocalDate() {
@@ -163,6 +214,8 @@ export function triggerCloudSync() {
         cart: getLocalCart(),
         catalog: getMasterCatalog(),
         history: getPastSessions(),
+        customStores: getLocalCustomStores(user.uid),
+        theme: getLocalTheme(),
         syncedAt: new Date().toISOString()
       };
 
@@ -203,6 +256,12 @@ export async function syncUserDataFromCloud(userId) {
       if (Array.isArray(cloudData.cart)) localStorage.setItem(KEYS.CART, JSON.stringify(cloudData.cart));
       if (Array.isArray(cloudData.catalog)) localStorage.setItem(KEYS.CATALOG, JSON.stringify(cloudData.catalog));
       if (Array.isArray(cloudData.history)) localStorage.setItem(KEYS.HISTORY, JSON.stringify(cloudData.history));
+      if (Array.isArray(cloudData.customStores)) {
+        saveLocalCustomStores(cloudData.customStores, userId);
+      }
+      if (cloudData.theme && (cloudData.theme === 'light' || cloudData.theme === 'dark')) {
+        saveLocalTheme(cloudData.theme);
+      }
       return cloudData;
     }
   } catch (err) {
@@ -328,7 +387,7 @@ export function importAllData(data) {
 /**
  * Bersihkan data sesi lokal saat ganti akun / logout
  */
-export function clearUserDataForAccountSwitch() {
+export function clearUserDataForAccountSwitch(userId = null) {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
     debounceTimer = null;
@@ -339,6 +398,9 @@ export function clearUserDataForAccountSwitch() {
   localStorage.removeItem(KEYS.DATE);
   localStorage.removeItem(KEYS.CATALOG);
   localStorage.removeItem(KEYS.HISTORY);
+  if (userId) {
+    localStorage.removeItem(`${KEYS.CUSTOM_STORES}_${userId}`);
+  }
 }
 
 /**
