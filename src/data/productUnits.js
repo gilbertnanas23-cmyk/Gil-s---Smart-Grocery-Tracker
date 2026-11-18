@@ -209,6 +209,87 @@ export const PRODUCT_SPECIFIC_UNITS = {
 };
 
 /**
+ * Aturan deteksi kategori otomatis berdasarkan nama produk (kata kunci spesifik & parsial).
+ * Diurutkan dari pola yang paling spesifik (multi-kata) hingga pola umum.
+ */
+export const CATEGORY_DETECTION_RULES = [
+  // Sabun & Kebersihan vs Perawatan Diri (spesifik multi-kata terlebih dahulu)
+  { keywords: ['sabun cuci piring', 'cuci piring', 'sunlight', 'mama lemon'], category: 'kebersihan', key: 'sabun cuci piring' },
+  { keywords: ['sabun cuci baju', 'sabun cuci', 'deterjen', 'rinso', 'daia', 'attack', 'so klin', 'soklin', 'pewangi', 'downy', 'molto', 'pemutih', 'bayclin', 'karbol', 'wipol', 'pembersih lantai', 'super pel', 'tisu', 'tissue'], category: 'kebersihan', key: 'kebersihan' },
+  { keywords: ['sabun mandi', 'sabun muka', 'sabun wajah', 'facial foam', 'shampo', 'shampoo', 'sampo', 'pasta gigi', 'odol', 'pepsodent', 'sikat gigi', 'deodorant', 'handbody', 'hand body', 'lotion', 'minyak wangi', 'parfum'], category: 'perawatan', key: 'perawatan' },
+
+  // Beras & Pokok
+  { keywords: ['beras', 'gula pasir', 'gula putih', 'gula', 'tepung terigu', 'tepung beras', 'tepung tapioka', 'tepung maizena', 'tepung bumbu', 'tepung', 'oatmeal', 'gandum'], category: 'pokok', key: 'pokok' },
+
+  // Minyak & Bumbu
+  { keywords: ['minyak goreng', 'minyak sawit', 'minyak kelapa', 'minyak', 'garam', 'garam dapur', 'kecap manis', 'kecap asin', 'kecap', 'saus sambal', 'saus tomat', 'saus tiram', 'saus', 'saos', 'margarin', 'mentega', 'blue band', 'royco', 'masako', 'kaldu', 'merica', 'lada', 'ketumbar', 'terasi', 'micin', 'msg', 'ajinomoto', 'sasa', 'vanili', 'baking powder'], category: 'bumbu', key: 'bumbu' },
+
+  // Telur & Segar
+  { keywords: ['telur ayam', 'telur bebek', 'telur puyuh', 'telur', 'daging sapi', 'daging ayam', 'daging', 'ayam fillet', 'ayam', 'ikan', 'udang', 'cumi', 'bawang merah', 'bawang putih', 'bawang bombay', 'bawang', 'cabai', 'cabe', 'tomat', 'wortel', 'kentang', 'sayur', 'bayam', 'kangkung', 'brokoli', 'apel', 'pisang', 'jeruk', 'buah'], category: 'segar', key: 'segar' },
+
+  // Makanan Instan
+  { keywords: ['mi instan', 'mie instan', 'indomie', 'mie sedap', 'sedap goreng', 'sarimi', 'pop mie', 'mie', 'bihun', 'soun', 'nugget', 'sosis', 'kornet', 'sarden'], category: 'instan', key: 'instan' },
+
+  // Minuman & Kopi
+  { keywords: ['air mineral', 'aqua', 'le minerale', 'cleo', 'air galon', 'kopi', 'kapolaga', 'luwak', 'nescafe', 'torabika', 'teh celup', 'teh botol', 'teh kotak', 'teh sariwangi', 'teh', 'susu uht', 'susu kental manis', 'susu bubuk', 'susu', 'sirup', 'marjan', 'jus'], category: 'minuman', key: 'minuman' },
+
+  // Peralatan Dapur
+  { keywords: ['wajan', 'teflon', 'panci', 'spatula', 'sutil', 'pisau dapur', 'pisau', 'talenan', 'sendok', 'garpu', 'piring', 'mangkok', 'serbet', 'lap dapur', 'spons cuci', 'spon'], category: 'peralatan', key: 'peralatan' },
+
+  // Fallback single-word
+  { keywords: ['sabun'], category: 'kebersihan', key: 'sabun' }
+];
+
+/**
+ * Mendeteksi kategori produk secara otomatis berdasarkan nama yang diketik atau dipilih.
+ * Mendukung pencocokan case-insensitive, penghapusan spasi di awal/akhir, dan pencocokan parsial/prefix.
+ */
+export function detectProductCategory(productName) {
+  if (!productName || typeof productName !== 'string') return null;
+  const clean = productName.toLowerCase().trim();
+  if (!clean) return null;
+
+  // 1. Cek pencocokan persis pada GENERIC_PRODUCTS
+  for (const item of GENERIC_PRODUCTS) {
+    const itemLower = item.name.toLowerCase();
+    if (clean === itemLower) {
+      return item.category;
+    }
+  }
+
+  // 2. Evaluasi aturan kata kunci kurasi
+  for (const rule of CATEGORY_DETECTION_RULES) {
+    for (const kw of rule.keywords) {
+      if (clean === kw || clean.startsWith(kw + ' ') || clean.includes(kw)) {
+        return rule.category;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Mendapatkan kunci identitas produk untuk mencegah penimpaan berulang
+ * saat pengguna sengaja mengedit kategori secara manual.
+ */
+export function getDetectedProductKey(productName) {
+  if (!productName || typeof productName !== 'string') return '';
+  const clean = productName.toLowerCase().trim();
+  if (!clean) return '';
+
+  for (const rule of CATEGORY_DETECTION_RULES) {
+    for (const kw of rule.keywords) {
+      if (clean === kw || clean.startsWith(kw + ' ') || clean.includes(kw)) {
+        return rule.key;
+      }
+    }
+  }
+
+  return '';
+}
+
+/**
  * Mendapatkan daftar satuan yang relevan berdasarkan nama produk yang diketik/dipilih.
  * Untuk produk yang dikenali, HANYA mengembalikan opsi satuan yang sesuai untuk produk tersebut.
  * Untuk produk tidak dikenal, mengembalikan fallback satuan standar.

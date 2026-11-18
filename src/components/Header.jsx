@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import {
   ShoppingCart,
-  Database,
-  Cloud,
-  CloudOff,
-  Smartphone,
-  Monitor,
   Settings,
-  Sparkles,
   Sun,
   Moon,
   LogOut,
   User,
-  ShieldCheck,
-  ChevronDown
+  ShieldCheck
 } from 'lucide-react';
 
 export function Header({
@@ -22,8 +15,6 @@ export function Header({
   onOpenLogin,
   onOpenProfile,
   isSupabaseConnected,
-  isFullScreen,
-  onToggleFullScreen,
   onOpenSettings,
   onOpenDiscountCalc,
   theme = 'dark',
@@ -74,15 +65,6 @@ export function Header({
           style={{ color: theme === 'dark' ? '#f59e0b' : '#6366f1' }}
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-
-        {/* Desktop Device Frame Toggle */}
-        <button
-          className="icon-btn"
-          onClick={onToggleFullScreen}
-          title={isFullScreen ? 'Tampilan Bezel Smartphone' : 'Tampilan Penuh (Fullscreen)'}
-        >
-          {isFullScreen ? <Smartphone size={18} /> : <Monitor size={18} />}
         </button>
 
         {/* Settings Dialog */}

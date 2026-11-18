@@ -265,16 +265,6 @@ body {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Standalone / Full Screen Mode (misal saat dibuka di layar HP) */
-.mobile-device-frame.full-screen-mode {
-  max-width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100%;
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
-}
 
 @media (max-width: 480px) {
   body {
@@ -1440,6 +1430,59 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   height: 44px;
 }
 
+/* Add Item Modal Specific Form Styling - Tight Label-to-Input Spacing (Fix 1) */
+.add-item-modal-form .form-group {
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: auto;
+}
+
+.add-item-modal-form .form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.add-item-modal-form .form-row-2col .form-group {
+  margin-bottom: 0;
+  height: auto;
+  gap: 6px;
+}
+
+.add-item-modal-form .form-label {
+  min-height: auto;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  line-height: 1.25;
+  margin-bottom: 0;
+}
+
+.add-item-modal-form .form-row-2col .form-label {
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 2px;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  margin-bottom: 0;
+}
+
+.add-item-modal-form .form-row-2col .form-input,
+.add-item-modal-form .form-row-2col .form-select {
+  height: 44px;
+  margin-top: 0;
+}
+
 /* Suggestion pills */
 .suggestion-pills-row {
   display: flex;
@@ -2428,17 +2471,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: #b91c1c;
 }
 
-/* Task B2: Product Combobox Dropdown */
+/* Task B2: Product Combobox Dropdown - Solid Opaque Background in Both Themes */
 .product-combobox-dropdown {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
   z-index: 120;
-  background: var(--bg-card);
-  border: 1.5px solid var(--border-subtle);
+  background: #1e293b; /* Fully opaque solid navy (Slate-800) in Dark Mode */
+  border: 1.5px solid #334155;
   border-radius: var(--radius-md);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   max-height: 230px;
   display: flex;
@@ -2447,14 +2490,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .combobox-dropdown-header {
-  padding: 7px 12px;
+  padding: 8px 12px;
   font-size: 0.68rem;
   font-weight: 700;
-  color: var(--text-dim);
+  color: #94a3b8; /* Crisp high contrast against solid #0f172a */
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(0, 0, 0, 0.18);
-  border-bottom: 1px solid var(--border-subtle);
+  background: #0f172a; /* Solid Slate-900 navy header */
+  border-bottom: 1px solid #334155;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2465,39 +2508,43 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow-y: auto;
   flex: 1;
   max-height: 190px;
+  background: #1e293b; /* Solid opaque list container */
 }
 
 .combobox-dropdown-item {
-  padding: 8px 12px;
+  padding: 9px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   font-size: 0.82rem;
-  color: var(--text-main);
+  color: #f8fafc; /* Crisp white for high readability */
+  background: transparent;
   transition: background 0.15s ease, color 0.15s ease;
   user-select: none;
 }
 
 .combobox-dropdown-item:hover,
 .combobox-dropdown-item.active {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--primary-light);
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399; /* Emerald-400 */
 }
 
 .combobox-item-name {
   font-weight: 600;
+  color: inherit;
 }
 
 .combobox-item-badge {
   font-size: 0.68rem;
-  color: var(--text-dim);
-  background: var(--bg-input);
+  color: #94a3b8;
+  background: #0f172a; /* Solid Slate-900 badge */
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid #334155;
 }
 
+/* Light Mode Overrides - Preserved Solid White */
 [data-theme="light"] .product-combobox-dropdown {
   background: #ffffff;
   border-color: #cbd5e1;
@@ -2508,6 +2555,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: #f8fafc;
   color: #64748b;
   border-bottom-color: #e2e8f0;
+}
+
+[data-theme="light"] .combobox-dropdown-list {
+  background: #ffffff;
 }
 
 [data-theme="light"] .combobox-dropdown-item {

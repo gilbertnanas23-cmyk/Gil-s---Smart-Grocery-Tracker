@@ -208,7 +208,7 @@ export function compareHistoricalPrice(currentPrice, lastMonthPrice, store = '',
       label: 'Stabil',
       diffNominal: 0,
       diffPercent: 0,
-      badgeColor: 'warning', // Stabil (Neutral Amber)
+      badgeColor: 'neutral', // Stabil (Neutral Grey Sesuai Rubrik DT2)
       storeMatched: isStoreMatched,
       advice: `Harga stabil, sama persis dengan bulan lalu ${storeContextNote} (selisih Rp 0).`
     };

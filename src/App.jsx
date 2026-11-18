@@ -94,7 +94,6 @@ export function App() {
   const [catalog, setCatalog] = useState(() => getMasterCatalog());
   const [sessions, setSessions] = useState(() => getPastSessions());
   const [activeTab, setActiveTab] = useState('cart'); // 'cart' | 'promo' | 'history' | 'analytics'
-  const [isFullScreen, setIsFullScreen] = useState(false);
   const [theme, setTheme] = useState(() => getLocalTheme());
 
   useEffect(() => {
@@ -426,8 +425,12 @@ export function App() {
 
   // Delete item
   const handleDeleteItem = (itemId) => {
+    const item = cart.find((i) => i.id === itemId);
     const updated = cart.filter((i) => i.id !== itemId);
     updateCartAndSave(updated);
+    if (item) {
+      toast.success(`${item.name} berhasil dihapus dari troli.`, 2000);
+    }
   };
 
   // Add / Edit item (Task B1 Budget Protection)
@@ -439,6 +442,19 @@ export function App() {
     } else {
       const updated = [dataWithStoreAndDate, ...cart];
       updateCartAndSave(updated);
+
+      // Priority handling: Prioritize budget warnings and suppress routine success toast if crossing warning/danger threshold
+      const projected = calculateCartTotal(updated);
+      const projectedStatus = calculateBudgetStatus(projected, budgetCap).status;
+      const currentStatus = calculateBudgetStatus(totalCart, budgetCap).status;
+
+      const willTriggerBudgetWarning =
+        (currentStatus === 'SAFE' && projectedStatus === 'WARNING') ||
+        ((currentStatus === 'SAFE' || currentStatus === 'WARNING') && projectedStatus === 'OVERBUDGET');
+
+      if (!willTriggerBudgetWarning) {
+        toast.success(`${dataWithStoreAndDate.name} berhasil ditambahkan ke troli.`, 2000);
+      }
     }
   };
 
@@ -655,16 +671,14 @@ export function App() {
       <div className="ambient-glow-2" />
 
       {/* Smartphone Device Frame */}
-      <main className={`mobile-device-frame ${isFullScreen ? 'full-screen-mode' : ''}`}>
+      <main className="mobile-device-frame">
         {/* Dynamic Island / Notch */}
-        {!isFullScreen && (
-          <div className="phone-notch-bar">
-            <div className="dynamic-island">
-              <div className="camera-lens" />
-              <div className="sensor-dot" />
-            </div>
+        <div className="phone-notch-bar">
+          <div className="dynamic-island">
+            <div className="camera-lens" />
+            <div className="sensor-dot" />
           </div>
-        )}
+        </div>
 
         {/* Global OAuth Error Toast */}
         {oauthErrorNotice && (
@@ -699,8 +713,6 @@ export function App() {
           }}
           onOpenProfile={() => setIsProfileModalOpen(true)}
           isSupabaseConnected={supabaseStatus}
-          isFullScreen={isFullScreen}
-          onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
           onOpenDiscountCalc={() => {
             setInvestigatingProduct(null);

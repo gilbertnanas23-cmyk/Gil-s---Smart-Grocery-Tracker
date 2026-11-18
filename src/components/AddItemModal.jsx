@@ -14,7 +14,13 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { CATEGORIES, UNITS, DEFAULT_STORES } from '../data/defaultProducts';
-import { GENERIC_PRODUCTS, STANDARD_UNITS, getRecommendedUnits } from '../data/productUnits';
+import {
+  GENERIC_PRODUCTS,
+  STANDARD_UNITS,
+  getRecommendedUnits,
+  detectProductCategory,
+  getDetectedProductKey
+} from '../data/productUnits';
 import { formatRupiah } from '../utils/formatters';
 import { calculateTieredDiscount, compareHistoricalPrice } from '../utils/calculations';
 import { getLocalStore, getLocalDate, getTodayLocalDateString } from '../services/storage';
@@ -49,6 +55,10 @@ export function AddItemModal({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const productComboboxRef = useRef(null);
   const modalDateInputRef = useRef(null);
+
+  // Category auto-sync & manual edit protection
+  const isCategoryManuallyModifiedRef = useRef(false);
+  const lastDetectedProductKeyRef = useRef('');
 
   // Close combobox when clicking outside
   useEffect(() => {
@@ -85,6 +95,8 @@ export function AddItemModal({
     if (editItem) {
       setName(editItem.name || '');
       setCategory(editItem.category || 'pokok');
+      isCategoryManuallyModifiedRef.current = true;
+      lastDetectedProductKeyRef.current = getDetectedProductKey(editItem.name || '');
 
       const existingUnit = editItem.unit || 'pcs';
       const recommended = getRecommendedUnits(editItem.name || '');
@@ -121,6 +133,8 @@ export function AddItemModal({
       // Reset form default
       setName('');
       setCategory('pokok');
+      isCategoryManuallyModifiedRef.current = false;
+      lastDetectedProductKeyRef.current = '';
       setUnit('pcs');
       setIsCustomUnit(false);
       setCustomUnitName('');
@@ -157,8 +171,11 @@ export function AddItemModal({
 
   const handleSelectGenericProduct = (product) => {
     setName(product.name);
-    if (product.category) {
-      setCategory(product.category);
+    const cat = product.category || detectProductCategory(product.name);
+    if (cat) {
+      setCategory(cat);
+      isCategoryManuallyModifiedRef.current = false;
+      lastDetectedProductKeyRef.current = getDetectedProductKey(product.name) || product.name.toLowerCase();
     }
     const unitsForProduct = getRecommendedUnits(product.name);
     // If current unit is already in the product's valid curated units, preserve it!
@@ -307,10 +324,10 @@ export function AddItemModal({
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="add-item-modal-form">
           {/* F-01: Lokasi / Toko Belanja & Tanggal Transaksi */}
-          <div className="form-row-2col" style={{ marginBottom: 12 }}>
-            <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-row-2col">
+            <div className="form-group">
               <label className="form-label">
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <MapPin size={13} color="var(--primary-light)" />
@@ -330,7 +347,7 @@ export function AddItemModal({
               </select>
             </div>
 
-            <div className="form-group" style={{ marginBottom: 0 }}>
+            <div className="form-group">
               <label
                 htmlFor="modal-input-date"
                 className="form-label"
@@ -383,7 +400,7 @@ export function AddItemModal({
 
           {/* Custom Store Input Field (jika memilih opsi '+ Toko Lainnya') */}
           {isCustomStore && (
-            <div className="form-group" style={{ marginTop: 2, marginBottom: 12 }}>
+            <div className="form-group" style={{ marginTop: -4, marginBottom: 14 }}>
               <input
                 type="text"
                 className="form-input"
@@ -397,7 +414,11 @@ export function AddItemModal({
           )}
 
           {/* F-01 / Task B2: Nama Produk with Searchable Generic Combobox Dropdown */}
-          <div className="form-group" ref={productComboboxRef} style={{ position: 'relative' }}>
+          <div
+            className="form-group"
+            ref={productComboboxRef}
+            style={{ position: 'relative', zIndex: isProductDropdownOpen ? 30 : 1 }}
+          >
             <label className="form-label">
               <span>Nama Produk / Kebutuhan Pokok</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Ketik atau pilih dari daftar</span>
@@ -412,6 +433,17 @@ export function AddItemModal({
                 setName(newName);
                 setIsProductDropdownOpen(true);
                 setActiveSuggestionIndex(-1);
+
+                // Auto-sync category based on typed product name
+                const detectedCat = detectProductCategory(newName);
+                const detectedKey = getDetectedProductKey(newName);
+                if (detectedCat) {
+                  if (!isCategoryManuallyModifiedRef.current || (detectedKey && detectedKey !== lastDetectedProductKeyRef.current)) {
+                    setCategory(detectedCat);
+                    lastDetectedProductKeyRef.current = detectedKey;
+                    isCategoryManuallyModifiedRef.current = false;
+                  }
+                }
 
                 // Auto-sync unit if current unit is not compatible with the newly typed product
                 if (!isCustomUnit) {
@@ -461,7 +493,10 @@ export function AddItemModal({
               <select
                 className="form-select"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  isCategoryManuallyModifiedRef.current = true;
+                }}
               >
                 {CATEGORIES.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -534,11 +569,18 @@ export function AddItemModal({
           </div>
 
           {/* Harga Bulan Lalu & Diskon Bertingkat */}
-          <div className="form-row-2col" style={{ marginBottom: 16 }}>
+          <div className="form-row-2col">
             <div className="form-group">
               <label className="form-label">
-                <span>Harga Bulan Lalu ({activeStoreName})</span>
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Opsional</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', width: '100%' }}>
+                  <span>Harga Bulan Lalu</span>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Opsional</span>
+                </div>
+                {activeStoreName && (
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', maxWidth: '100%' }}>
+                    ({activeStoreName})
+                  </span>
+                )}
               </label>
               <input
                 type="number"
@@ -554,8 +596,10 @@ export function AddItemModal({
 
             <div className="form-group">
               <label className="form-label">
-                <span>Promo / Diskon</span>
-                <span className="form-label-hint">contoh: 50%+20%</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', width: '100%' }}>
+                  <span>Promo / Diskon</span>
+                </div>
+                <span className="form-label-hint" style={{ display: 'block' }}>contoh: 50%+20%</span>
               </label>
               <input
                 type="text"
