@@ -781,28 +781,31 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 10px;
+  flex-wrap: nowrap;
+  gap: 8px;
   margin: 14px 0 10px 0;
+  width: 100%;
 }
 
 .section-heading {
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-weight: 700;
   color: var(--text-main);
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex-wrap: nowrap;
+  flex-shrink: 1;
 }
 
 .section-title-text {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .section-count-badge {
-  font-size: 0.72rem;
+  font-size: 0.70rem;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.08);
   padding: 2px 7px;
@@ -2763,5 +2766,157 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .floating-budget-status-badge {
     font-size: 0.64rem;
     padding: 2px 6px;
+  }
+}
+
+/* ==========================================================================
+   CART SORT MENU & EXPANDED CARD TAP AREA (Fix 2, 3, 4)
+   ========================================================================== */
+
+.cart-sort-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.active-sort-btn {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  background: rgba(16, 185, 129, 0.14) !important;
+}
+
+.cart-sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  width: 180px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeIn 0.15s ease forwards;
+  user-select: none;
+}
+
+[data-theme="light"] .cart-sort-menu {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+.cart-sort-menu-header {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  padding: 6px 10px 4px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 2px;
+}
+
+[data-theme="light"] .cart-sort-menu-header {
+  color: #64748b;
+  border-bottom-color: #e2e8f0;
+}
+
+.cart-sort-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cart-sort-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--primary);
+}
+
+[data-theme="light"] .cart-sort-menu-item {
+  color: #1e293b;
+}
+
+[data-theme="light"] .cart-sort-menu-item:hover {
+  background: #f1f5f9;
+  color: #059669;
+}
+
+.cart-sort-menu-item.active {
+  color: var(--primary);
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+[data-theme="light"] .cart-sort-menu-item.active {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.cart-sort-menu-item.reset-order {
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.70rem;
+}
+
+[data-theme="light"] .cart-sort-menu-item.reset-order {
+  border-top-color: #e2e8f0;
+  color: #64748b;
+}
+
+/* Expanded Card Tap Area (Fix 4) */
+.grocery-item-card.clickable-item-card {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.grocery-item-card.clickable-item-card:hover {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .grocery-item-card.clickable-item-card:hover {
+  border-color: rgba(5, 150, 105, 0.55);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.grocery-item-card.clickable-item-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Small-screen (<= 360px) alignment refinements */
+@media (max-width: 360px) {
+  .section-heading {
+    font-size: 0.78rem;
+    gap: 4px;
+  }
+  .section-title-row {
+    gap: 4px;
+  }
+  .btn-clear-cart-text {
+    padding: 3px 7px;
+    font-size: 0.68rem;
+  }
+  .section-count-badge {
+    padding: 2px 5px;
+    font-size: 0.66rem;
   }
 }

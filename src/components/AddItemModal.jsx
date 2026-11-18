@@ -9,11 +9,9 @@ import {
   ArrowDownRight,
   Equal,
   Sparkles,
-  MapPin,
-  Calendar,
   AlertCircle
 } from 'lucide-react';
-import { CATEGORIES, UNITS, DEFAULT_STORES } from '../data/defaultProducts';
+import { CATEGORIES, UNITS } from '../data/defaultProducts';
 import {
   GENERIC_PRODUCTS,
   STANDARD_UNITS,
@@ -31,7 +29,9 @@ export function AddItemModal({
   onSaveItem,
   editItem = null,
   catalog = [],
-  customStores = []
+  customStores = [],
+  activeStore = '',
+  activeDate = ''
 }) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('pokok');
@@ -42,19 +42,24 @@ export function AddItemModal({
   const [unitPrice, setUnitPrice] = useState('');
   const [lastMonthPrice, setLastMonthPrice] = useState('');
   const [discountString, setDiscountString] = useState('');
-  const [store, setStore] = useState(() => getLocalStore());
-  const [isCustomStore, setIsCustomStore] = useState(false);
-  const [customStoreName, setCustomStoreName] = useState('');
-  const [date, setDate] = useState(() => getLocalDate());
   const [validationError, setValidationError] = useState('');
 
-  const allStores = [...DEFAULT_STORES, ...(customStores || [])];
+  // Resolved store and date:
+  // For editing existing items: preserve editItem.store and editItem.date
+  // For new items: automatically inherit active store and date from main page
+  const resolvedStore = editItem
+    ? (editItem.store || activeStore || getLocalStore())
+    : (activeStore || getLocalStore());
+  const resolvedDate = editItem
+    ? (editItem.date || activeDate || getLocalDate())
+    : (activeDate || getLocalDate() || getTodayLocalDateString());
+  const activeStoreName = resolvedStore;
+  const date = resolvedDate;
 
   // Searchable generic product combobox states
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const productComboboxRef = useRef(null);
-  const modalDateInputRef = useRef(null);
 
   // Category auto-sync & manual edit protection
   const isCategoryManuallyModifiedRef = useRef(false);
@@ -71,20 +76,6 @@ export function AddItemModal({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleOpenModalDatePicker = () => {
-    if (modalDateInputRef.current) {
-      if (typeof modalDateInputRef.current.showPicker === 'function') {
-        try {
-          modalDateInputRef.current.showPicker();
-        } catch {
-          modalDateInputRef.current.focus();
-        }
-      } else {
-        modalDateInputRef.current.focus();
-      }
-    }
-  };
 
   // Prefill when editing or opening
   useEffect(() => {
@@ -116,19 +107,6 @@ export function AddItemModal({
       setUnitPrice(editItem.unitPrice ? String(editItem.unitPrice) : '');
       setLastMonthPrice(editItem.lastMonthPrice ? String(editItem.lastMonthPrice) : '');
       setDiscountString(editItem.discountString || '');
-
-      const currentItemStore = editItem.store || getLocalStore();
-      if (allStores.includes(currentItemStore)) {
-        setStore(currentItemStore);
-        setIsCustomStore(false);
-        setCustomStoreName('');
-      } else {
-        setStore('CUSTOM');
-        setIsCustomStore(true);
-        setCustomStoreName(currentItemStore);
-      }
-
-      setDate(editItem.date || getLocalDate());
     } else {
       // Reset form default
       setName('');
@@ -142,25 +120,10 @@ export function AddItemModal({
       setUnitPrice('');
       setLastMonthPrice('');
       setDiscountString('');
-
-      const defaultSavedStore = getLocalStore();
-      if (allStores.includes(defaultSavedStore)) {
-        setStore(defaultSavedStore);
-        setIsCustomStore(false);
-        setCustomStoreName('');
-      } else {
-        setStore('CUSTOM');
-        setIsCustomStore(true);
-        setCustomStoreName(defaultSavedStore);
-      }
-
-      setDate(getLocalDate() || getTodayLocalDateString());
     }
-  }, [editItem, isOpen, customStores]);
+  }, [editItem, isOpen]);
 
   if (!isOpen) return null;
-
-  const activeStoreName = isCustomStore ? customStoreName.trim() : store;
 
   // Filter ONLY generic products (without package sizes, quantities, or units)
   const trimmedName = name.trim().toLowerCase();
@@ -237,17 +200,6 @@ export function AddItemModal({
   const lineTotal = netPrice * (Number(qty) || 1);
   const comparison = compareHistoricalPrice(numPrice, numLastPrice, activeStoreName, activeStoreName);
 
-  const handleStoreChange = (e) => {
-    const val = e.target.value;
-    if (val === 'CUSTOM') {
-      setIsCustomStore(true);
-      setStore('CUSTOM');
-    } else {
-      setIsCustomStore(false);
-      setStore(val);
-    }
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setValidationError('');
@@ -255,11 +207,6 @@ export function AddItemModal({
     // Validasi Aktif Bahasa Indonesia (F-01)
     if (!name.trim()) {
       setValidationError('Silakan masukkan nama produk belanja Anda.');
-      return;
-    }
-
-    if (isCustomStore && !customStoreName.trim()) {
-      setValidationError('Silakan ketik nama toko atau pilih salah satu toko dari daftar.');
       return;
     }
 
@@ -275,12 +222,6 @@ export function AddItemModal({
       return;
     }
 
-    if (!date) {
-      setValidationError('Tanggal transaksi belanja wajib dipilih.');
-      return;
-    }
-
-    const finalStoreToSave = isCustomStore ? customStoreName.trim() : store;
     const finalUnitToSave = (unit === 'CUSTOM' || isCustomUnit) ? (customUnitName.trim() || 'pcs') : unit;
 
     const itemData = {
@@ -292,9 +233,9 @@ export function AddItemModal({
       unitPrice: priceNum,
       lastMonthPrice: numLastPrice,
       discountString: discountString.trim(),
-      store: finalStoreToSave,
-      date: date,
-      checked: true
+      store: resolvedStore,
+      date: resolvedDate,
+      checked: editItem && editItem.checked !== undefined ? editItem.checked : true
     };
 
     onSaveItem(itemData);
@@ -325,94 +266,6 @@ export function AddItemModal({
         )}
 
         <form onSubmit={handleSubmit} className="add-item-modal-form">
-          {/* F-01: Lokasi / Toko Belanja & Tanggal Transaksi */}
-          <div className="form-row-2col">
-            <div className="form-group">
-              <label className="form-label">
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={13} color="var(--primary-light)" />
-                  <span>Toko / Lokasi</span>
-                </span>
-              </label>
-              <select
-                className="form-select"
-                value={isCustomStore ? 'CUSTOM' : store}
-                onChange={handleStoreChange}
-                required
-              >
-                {allStores.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-                <option value="CUSTOM">+ Toko Lainnya (Ketik Manual)...</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label
-                htmlFor="modal-input-date"
-                className="form-label"
-                style={{ cursor: 'pointer' }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleOpenModalDatePicker();
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleOpenModalDatePicker();
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      margin: 0,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: 'var(--primary-light)',
-                      outline: 'none'
-                    }}
-                    aria-label="Pilih tanggal transaksi"
-                    title="Buka pemilih tanggal transaksi"
-                  >
-                    <Calendar size={13} color="var(--primary-light)" />
-                  </button>
-                  <span>Tanggal Transaksi</span>
-                </span>
-              </label>
-              <input
-                ref={modalDateInputRef}
-                id="modal-input-date"
-                type="date"
-                className="form-input"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                onClick={handleOpenModalDatePicker}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Custom Store Input Field (jika memilih opsi '+ Toko Lainnya') */}
-          {isCustomStore && (
-            <div className="form-group" style={{ marginTop: -4, marginBottom: 14 }}>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Ketik nama toko belanja (misal: Lotte Mart Puri Indah, Pasar Kopro)..."
-                value={customStoreName}
-                onChange={(e) => setCustomStoreName(e.target.value)}
-                autoFocus
-                required
-              />
-            </div>
-          )}
-
           {/* F-01 / Task B2: Nama Produk with Searchable Generic Combobox Dropdown */}
           <div
             className="form-group"

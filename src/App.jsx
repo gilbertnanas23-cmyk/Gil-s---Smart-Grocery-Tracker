@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Plus,
   ShoppingCart,
@@ -13,7 +13,9 @@ import {
   Lock,
   MapPin,
   Calendar,
-  Trash2
+  Trash2,
+  ArrowUpDown,
+  Check
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { BudgetSafetyGauge } from './components/BudgetSafetyGauge';
@@ -325,18 +327,58 @@ export function App() {
     setIsProfileModalOpen(false);
   };
 
-  // Calculate cart items with net line totals
-  const enrichedCart = cart.map((item) => {
+  // Sort State for Cart Items (Fix 3)
+  const [sortBy, setSortBy] = useState('default'); // 'default' | 'highest' | 'lowest'
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef(null);
+
+  // Close sort menu when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) {
+        setIsSortMenuOpen(false);
+      }
+    };
+    if (isSortMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('touchstart', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [isSortMenuOpen]);
+
+  // Calculate cart items with net line totals and stable originalIndex
+  const enrichedCart = cart.map((item, originalIndex) => {
     const disc = calculateTieredDiscount(item.unitPrice, item.discountString);
     const netUnitPrice = disc.finalPrice;
     const qty = Number(item.qty) || 1;
     const lineTotal = netUnitPrice * qty;
     return {
       ...item,
+      originalIndex,
       netUnitPrice,
       lineTotal
     };
   });
+
+  // Visually sort items without mutating original cart or triggering storage/database updates
+  const sortedCartItems = useMemo(() => {
+    if (sortBy === 'highest') {
+      return [...enrichedCart].sort((a, b) => {
+        const diff = (b.lineTotal || 0) - (a.lineTotal || 0);
+        return diff !== 0 ? diff : a.originalIndex - b.originalIndex;
+      });
+    }
+    if (sortBy === 'lowest') {
+      return [...enrichedCart].sort((a, b) => {
+        const diff = (a.lineTotal || 0) - (b.lineTotal || 0);
+        return diff !== 0 ? diff : a.originalIndex - b.originalIndex;
+      });
+    }
+    return enrichedCart;
+  }, [enrichedCart, sortBy]);
 
   const totalCart = enrichedCart.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
 
@@ -920,14 +962,62 @@ export function App() {
                         <span>Hapus Semua</span>
                       </button>
                     )}
-                    <button
-                      className="icon-btn"
-                      style={{ width: 30, height: 30 }}
-                      onClick={() => setIsSettingsModalOpen(true)}
-                      title="Atur Budget"
-                    >
-                      <Filter size={13} />
-                    </button>
+
+                    <div className="cart-sort-wrapper" ref={sortMenuRef}>
+                      <button
+                        type="button"
+                        className={`icon-btn ${sortBy !== 'default' ? 'active-sort-btn' : ''}`}
+                        style={{ width: 30, height: 30 }}
+                        onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                        aria-label="Urutkan belanjaan berdasarkan harga"
+                        title="Urutkan harga barang"
+                      >
+                        <ArrowUpDown size={13} />
+                      </button>
+
+                      {isSortMenuOpen && (
+                        <div className="cart-sort-menu" role="menu">
+                          <div className="cart-sort-menu-header">Urutkan Harga</div>
+                          <button
+                            type="button"
+                            className={`cart-sort-menu-item ${sortBy === 'highest' ? 'active' : ''}`}
+                            onClick={() => {
+                              setSortBy('highest');
+                              setIsSortMenuOpen(false);
+                            }}
+                            role="menuitem"
+                          >
+                            <span>Harga Paling Mahal</span>
+                            {sortBy === 'highest' && <Check size={13} color="var(--primary)" />}
+                          </button>
+                          <button
+                            type="button"
+                            className={`cart-sort-menu-item ${sortBy === 'lowest' ? 'active' : ''}`}
+                            onClick={() => {
+                              setSortBy('lowest');
+                              setIsSortMenuOpen(false);
+                            }}
+                            role="menuitem"
+                          >
+                            <span>Harga Paling Murah</span>
+                            {sortBy === 'lowest' && <Check size={13} color="var(--primary)" />}
+                          </button>
+                          {sortBy !== 'default' && (
+                            <button
+                              type="button"
+                              className="cart-sort-menu-item reset-order"
+                              onClick={() => {
+                                setSortBy('default');
+                                setIsSortMenuOpen(false);
+                              }}
+                              role="menuitem"
+                            >
+                              <span>Urutan Awal</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -954,7 +1044,7 @@ export function App() {
                   </div>
                 ) : (
                   <div className="grocery-items-container">
-                    {enrichedCart.map((item) => (
+                    {sortedCartItems.map((item) => (
                       <GroceryItemCard
                         key={item.id}
                         item={item}
@@ -1171,6 +1261,8 @@ export function App() {
           editItem={editingItem}
           catalog={catalog}
           customStores={customStores}
+          activeStore={selectedStore}
+          activeDate={selectedDate}
         />
 
         <CheckoutModal

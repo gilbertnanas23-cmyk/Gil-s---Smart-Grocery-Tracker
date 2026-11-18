@@ -48,17 +48,50 @@ export function GroceryItemCard({
     setShowDeleteConfirm(false);
   };
 
+  const handleCardClick = (e) => {
+    if (showDeleteConfirm) return;
+    // Don't trigger edit modal if tapping interactive buttons or stepper
+    if (e.target.closest('button, .item-delete-btn, .stepper-btn, .stepper-control')) {
+      return;
+    }
+    if (onEditItem) {
+      onEditItem(item);
+    }
+  };
+
+  const handleCardKeyDown = (e) => {
+    if (showDeleteConfirm) return;
+    if (e.target.closest('button, .item-delete-btn, .stepper-btn')) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (onEditItem) {
+        onEditItem(item);
+      }
+    }
+  };
+
   return (
-    <div className="grocery-item-card">
+    <div
+      className="grocery-item-card clickable-item-card"
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`Edit ${item.name}`}
+      title="Klik untuk mengedit rincian barang"
+    >
       {/* Inline Delete Confirmation Dialog (UX Safety) */}
       {showDeleteConfirm ? (
-        <div style={{
-          background: 'rgba(239, 68, 68, 0.12)',
-          border: '1px solid rgba(239, 68, 68, 0.35)',
-          borderRadius: '12px',
-          padding: '12px',
-          marginBottom: '8px'
-        }}>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '12px',
+            padding: '12px',
+            marginBottom: '8px'
+          }}
+        >
           <div style={{
             fontSize: '0.8rem',
             fontWeight: 700,
@@ -76,7 +109,10 @@ export function GroceryItemCard({
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setShowDeleteConfirm(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(false);
+              }}
               style={{
                 flex: 1,
                 minHeight: '44px',
@@ -90,7 +126,10 @@ export function GroceryItemCard({
 
             <button
               type="button"
-              onClick={handleConfirmDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConfirmDelete();
+              }}
               style={{
                 flex: 1,
                 minHeight: '44px',
@@ -119,8 +158,6 @@ export function GroceryItemCard({
         <div className="item-info-col">
           <div
             className="item-name"
-            onClick={() => onEditItem && onEditItem(item)}
-            style={{ cursor: 'pointer' }}
             title="Klik untuk mengedit rincian barang"
           >
             {item.name}
@@ -196,7 +233,10 @@ export function GroceryItemCard({
         {!showDeleteConfirm && (
           <button
             className="item-delete-btn"
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDeleteConfirm(true);
+            }}
             title="Hapus barang dari troli"
             style={{
               minWidth: '44px',
@@ -246,7 +286,10 @@ export function GroceryItemCard({
         <div className="stepper-control" style={{ minHeight: '44px' }}>
           <button
             className="stepper-btn"
-            onClick={() => onUpdateQty(item.id, Math.max(1, (item.qty || 1) - 1))}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdateQty(item.id, Math.max(1, (item.qty || 1) - 1));
+            }}
             disabled={(item.qty || 1) <= 1}
             style={{
               width: '44px',
@@ -267,7 +310,10 @@ export function GroceryItemCard({
 
           <button
             className="stepper-btn"
-            onClick={() => onUpdateQty(item.id, (item.qty || 1) + 1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdateQty(item.id, (item.qty || 1) + 1);
+            }}
             style={{
               width: '44px',
               height: '44px',
